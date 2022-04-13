@@ -2,4 +2,4 @@ indent_style = "Block"
 reorder_imports = true
 
 chain_width = 80
-max_width = 115
+max_width = 120

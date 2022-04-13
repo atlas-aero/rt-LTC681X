@@ -4,9 +4,9 @@
 
 Abstraction for LTC681X family like [LTC6813](https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf).
 
-> :warning: The library is still very incomplete, but is under active development.
+> :warning: The crate is still very incomplete, but is under active development.
 
-> :warning: The library has only been tested for the LTC6813 variant. Although the protocol of the LTC681X family is essentially the same, inconsistencies are still conceivable for some variants. Practical tests + feedback with other variants are therefore welcome.
+> :warning: The crate has only been tested for the LTC6813 variant. Although the protocol of the LTC681X family is essentially the same, inconsistencies are still conceivable for some variants. Practical tests + feedback with other variants are therefore welcome.
 
 ## Development
 
