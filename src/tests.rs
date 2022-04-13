@@ -1,6 +1,8 @@
 use crate::mocks::{BusError, BusMockBuilder, MockPin, MockSPIBus, PinError};
-use crate::monitor::{ADCMode, CellSelection, Error, LTC681X};
+use crate::monitor::CellVoltageRegister::{RegisterB, RegisterC, RegisterD, RegisterE, RegisterF};
+use crate::monitor::{ADCMode, CellSelection, CellVoltageRegister, Error, LTC681X};
 use crate::pec15::PEC15;
+use CellVoltageRegister::RegisterA;
 
 #[test]
 fn test_start_conv_cells_acc_modes() {
@@ -11,7 +13,7 @@ fn test_start_conv_cells_acc_modes() {
         .expect_command(0b0000_0010, 0b0110_0000, 0x7c, 0x20)
         .to_mock();
 
-    let mut monitor = LTC681X::new(bus, get_cs_no_polling(4));
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(4));
     monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, false).unwrap();
     monitor.start_conv_cells(ADCMode::Fast, CellSelection::All, false).unwrap();
     monitor.start_conv_cells(ADCMode::Filtered, CellSelection::All, false).unwrap();
@@ -30,7 +32,7 @@ fn test_start_conv_cells_cell_groups() {
         .expect_command(0b0000_0011, 0b0110_0110, 0xD8, 0xA4)
         .to_mock();
 
-    let mut monitor = LTC681X::new(bus, get_cs_no_polling(7));
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(7));
     monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, false).unwrap();
     monitor.start_conv_cells(ADCMode::Normal, CellSelection::Group1, false).unwrap();
     monitor.start_conv_cells(ADCMode::Normal, CellSelection::Group2, false).unwrap();
@@ -47,7 +49,7 @@ fn test_start_conv_permit_charging() {
         .expect_command(0b0000_0011, 0b0111_0000, 0xAF, 0x42)
         .to_mock();
 
-    let mut monitor = LTC681X::new(bus, get_cs_no_polling(2));
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(2));
     monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, false).unwrap();
     monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, true).unwrap();
 }
@@ -61,7 +63,7 @@ fn test_start_conv_cells_sdo_polling() {
         .expect_command(0b0000_0011, 0b0110_0000, 0xf4, 0x6c)
         .to_mock();
 
-    let mut monitor = LTC681X::new(bus, cs).enable_sdo_polling();
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs).enable_sdo_polling();
     monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, false).unwrap();
 }
 
@@ -71,12 +73,12 @@ fn test_start_conv_cs_error() {
     cs.expect_set_low().times(1).returning(move || Err(PinError::Error1));
 
     let bus = MockSPIBus::new();
-    let mut monitor = LTC681X::new(bus, cs);
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs);
 
     let result = monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, false);
     match result.unwrap_err() {
-        Error::TransferError(_) => panic!("Unexpected TransferError"),
         Error::CSPinError(_) => {}
+        _ => panic!("Unexpected error type"),
     }
 }
 
@@ -88,12 +90,12 @@ fn test_start_conv_transfer_error() {
     let mut bus = MockSPIBus::new();
     bus.expect_transfer().times(1).returning(move |_| Err(BusError::Error1));
 
-    let mut monitor = LTC681X::new(bus, cs);
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs);
 
     let result = monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, false);
     match result.unwrap_err() {
         Error::TransferError(_) => {}
-        Error::CSPinError(_) => panic!("Unexpected CSPinError"),
+        _ => panic!("Unexpected error type"),
     }
 }
 
@@ -105,7 +107,7 @@ fn test_sdo_polling_ready() {
     let mut bus = MockSPIBus::new();
     bus.expect_transfer().times(1).returning(move |_| Ok(&[0xff]));
 
-    let mut monitor = LTC681X::new(bus, cs).enable_sdo_polling();
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs).enable_sdo_polling();
     assert!(monitor.adc_ready().unwrap());
 }
 
@@ -116,7 +118,7 @@ fn test_sdo_polling_not_ready() {
     let mut bus = MockSPIBus::new();
     bus.expect_transfer().times(1).returning(move |_| Ok(&[0x00]));
 
-    let mut monitor = LTC681X::new(bus, cs).enable_sdo_polling();
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs).enable_sdo_polling();
     assert!(!monitor.adc_ready().unwrap());
 }
 
@@ -126,11 +128,11 @@ fn test_sdo_polling_transfer_error() {
     let mut bus = MockSPIBus::new();
     bus.expect_transfer().times(1).returning(move |_| Err(BusError::Error1));
 
-    let mut monitor = LTC681X::new(bus, cs).enable_sdo_polling();
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs).enable_sdo_polling();
 
     match monitor.adc_ready().unwrap_err() {
         Error::TransferError(_) => {}
-        Error::CSPinError(_) => panic!("Unexpected CSPinError"),
+        _ => panic!("Unexpected error type"),
     }
 }
 
@@ -142,11 +144,179 @@ fn test_sdo_polling_cs_error() {
     let mut bus = MockSPIBus::new();
     bus.expect_transfer().times(1).returning(move |_| Ok(&[0xff]));
 
-    let mut monitor = LTC681X::new(bus, cs).enable_sdo_polling();
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs).enable_sdo_polling();
 
     match monitor.adc_ready().unwrap_err() {
-        Error::TransferError(_) => panic!("Unexpected TransferError"),
         Error::CSPinError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_read_cell_voltages_register_a() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_0100, 0x07, 0xC2)
+        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        .to_mock();
+
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_cell_voltages(RegisterA).unwrap();
+    assert_eq!(24979, result[0][0]);
+    assert_eq!(7867, result[0][1]);
+    assert_eq!(8878, result[0][2]);
+}
+
+#[test]
+fn test_read_cell_voltages_register_b() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_0110, 0x9A, 0x94)
+        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        .to_mock();
+
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_cell_voltages(RegisterB).unwrap();
+    assert_eq!(26333, result[0][0]);
+    assert_eq!(7538, result[0][1]);
+    assert_eq!(7330, result[0][2]);
+}
+
+#[test]
+fn test_read_cell_voltages_register_c() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
+        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .to_mock();
+
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_cell_voltages(RegisterC).unwrap();
+    assert_eq!(25441, result[0][0]);
+    assert_eq!(7869, result[0][1]);
+    assert_eq!(8932, result[0][2]);
+}
+
+#[test]
+fn test_read_cell_voltages_register_d() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_1010, 0xC3, 0x4)
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .to_mock();
+
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_cell_voltages(RegisterD).unwrap();
+    assert_eq!(24970, result[0][0]);
+    assert_eq!(8033, result[0][1]);
+    assert_eq!(8655, result[0][2]);
+}
+
+#[test]
+fn test_read_cell_voltages_register_e() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
+        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .to_mock();
+
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_cell_voltages(RegisterE).unwrap();
+    assert_eq!(25822, result[0][0]);
+    assert_eq!(8591, result[0][1]);
+    assert_eq!(8586, result[0][2]);
+}
+
+#[test]
+fn test_read_cell_voltages_register_f() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_1011, 0x48, 0x36)
+        .expect_register_read(&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68])
+        .to_mock();
+
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_cell_voltages(RegisterF).unwrap();
+    assert_eq!(25344, result[0][0]);
+    assert_eq!(7983, result[0][1]);
+    assert_eq!(8075, result[0][2]);
+}
+
+#[test]
+fn test_read_cell_voltages_multiple_devices() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_1010, 0xC3, 0x4)
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(&[0x53, 0x64, 0x76, 0x1E, 0xB9, 0x1E, 0x1B, 0xC6])
+        .expect_register_read(&[0xA2, 0x62, 0x05, 0x1F, 0xC9, 0x20, 0xEE, 0x94])
+        .to_mock();
+
+    let mut monitor: LTC681X<_, _, _, 3> = LTC681X::new(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_cell_voltages(RegisterD).unwrap();
+
+    assert_eq!(24970, result[0][0]);
+    assert_eq!(8033, result[0][1]);
+    assert_eq!(8655, result[0][2]);
+
+    assert_eq!(25683, result[1][0]);
+    assert_eq!(7798, result[1][1]);
+    assert_eq!(7865, result[1][2]);
+
+    assert_eq!(25250, result[2][0]);
+    assert_eq!(7941, result[2][1]);
+    assert_eq!(8393, result[2][2]);
+}
+
+#[test]
+fn test_read_cell_voltages_pec_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_1011, 0x48, 0x36)
+        .expect_register_read(&[0x2A, 0x63, 0x8E, 0x1E, 0xEC, 0x1F, 0x11, 0x0D])
+        .to_mock();
+
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs);
+
+    let result = monitor.read_cell_voltages(RegisterF);
+    match result.unwrap_err() {
+        Error::ChecksumMismatch => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_read_cell_voltages_cs_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Err(PinError::Error1));
+
+    let bus = MockSPIBus::new();
+
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs);
+
+    let result = monitor.read_cell_voltages(RegisterF);
+    match result.unwrap_err() {
+        Error::CSPinError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_read_cell_voltages_transfer_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let mut bus = MockSPIBus::new();
+    bus.expect_transfer().times(1).returning(move |_| Err(BusError::Error1));
+
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs);
+
+    let result = monitor.read_cell_voltages(RegisterF);
+    match result.unwrap_err() {
+        Error::TransferError(_) => {}
+        _ => panic!("Unexpected error type"),
     }
 }
 

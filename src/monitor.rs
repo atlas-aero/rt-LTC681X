@@ -1,3 +1,4 @@
+use crate::monitor::Error::TransferError;
 use crate::pec15::PEC15;
 use core::fmt::{Debug, Formatter};
 use embedded_hal::blocking::spi::Transfer;
@@ -58,6 +59,16 @@ pub enum CellSelection {
     Group6 = 0x6,
 }
 
+/// Cell voltage registers
+pub enum CellVoltageRegister {
+    RegisterA = 0x4,
+    RegisterB = 0x6,
+    RegisterC = 0x8,
+    RegisterD = 0xA,
+    RegisterE = 0x9,
+    RegisterF = 0xB,
+}
+
 /// Error enum of LTC681X
 #[derive(PartialEq)]
 pub enum Error<B: Transfer<u8>, CS: OutputPin> {
@@ -66,10 +77,13 @@ pub enum Error<B: Transfer<u8>, CS: OutputPin> {
 
     /// Error while changing state of CS pin
     CSPinError(CS::Error),
+
+    /// PEC checksum of returned data was invalid
+    ChecksumMismatch,
 }
 
 /// Client for LTC681X IC
-pub struct LTC681X<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>> {
+pub struct LTC681X<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> {
     /// SPI bus
     bus: B,
 
@@ -80,7 +94,7 @@ pub struct LTC681X<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>> {
     poll_method: P,
 }
 
-impl<B: Transfer<u8>, CS: OutputPin> LTC681X<B, CS, NoPolling> {
+impl<B: Transfer<u8>, CS: OutputPin, const L: usize> LTC681X<B, CS, NoPolling, L> {
     pub fn new(bus: B, cs: CS) -> Self {
         LTC681X {
             bus,
@@ -90,7 +104,7 @@ impl<B: Transfer<u8>, CS: OutputPin> LTC681X<B, CS, NoPolling> {
     }
 }
 
-impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>> LTC681X<B, CS, P> {
+impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<B, CS, P, L> {
     /// Starts ADC conversion of cell voltages
     ///
     /// # Arguments
@@ -113,6 +127,21 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>> LTC681X<B, CS, P> {
         self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
     }
 
+    /// Reads and returns the cell voltages of the given register
+    /// Returns one array for each device in daisy chain
+    pub fn read_cell_voltages(&mut self, register: CellVoltageRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
+        self.cs.set_low().map_err(Error::CSPinError)?;
+        self.send_command(register as u16).map_err(Error::TransferError)?;
+
+        let mut result = [[0, 0, 0]; L];
+        for i in 0..L {
+            result[i] = self.read()?;
+        }
+
+        self.cs.set_high().map_err(Error::CSPinError)?;
+        Ok(result)
+    }
+
     /// Sends the given command. Calculates and attaches the PEC checksum
     fn send_command(&mut self, command: u16) -> Result<(), B::Error> {
         let mut data = [(command >> 8) as u8, command as u8, 0x0, 0x0];
@@ -125,11 +154,29 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>> LTC681X<B, CS, P> {
         Ok(())
     }
 
+    /// Reads a register
+    fn read(&mut self) -> Result<[u16; 3], Error<B, CS>> {
+        let mut command = [0xff as u8; 8];
+        let result = self.bus.transfer(&mut command).map_err(TransferError)?;
+
+        let pec = PEC15::calc(&result[0..6]);
+        if pec[0] != result[6] || pec[1] != result[7] {
+            return Err(Error::ChecksumMismatch);
+        }
+
+        let mut registers = [result[0] as u16, result[2] as u16, result[4] as u16];
+        registers[0] |= (result[1] as u16) << 8;
+        registers[1] |= (result[3] as u16) << 8;
+        registers[2] |= (result[5] as u16) << 8;
+
+        Ok(registers)
+    }
+
     /// Enables SDO ADC polling
     ///
     /// After entering a conversion command, the SDO line is driven low when the device is busy
     /// performing conversions. SDO is pulled high when the device completes conversions.
-    pub fn enable_sdo_polling(self) -> LTC681X<B, CS, SDOLinePolling> {
+    pub fn enable_sdo_polling(self) -> LTC681X<B, CS, SDOLinePolling, L> {
         LTC681X {
             bus: self.bus,
             cs: self.cs,
@@ -138,7 +185,7 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>> LTC681X<B, CS, P> {
     }
 }
 
-impl<B: Transfer<u8>, CS: OutputPin> LTC681X<B, CS, SDOLinePolling> {
+impl<B: Transfer<u8>, CS: OutputPin, const L: usize> LTC681X<B, CS, SDOLinePolling, L> {
     /// Returns false if the ADC is busy
     /// If ADC is ready, CS line is pulled high
     pub fn adc_ready(&mut self) -> Result<bool, Error<B, CS>> {
@@ -159,6 +206,7 @@ impl<B: Transfer<u8>, CS: OutputPin> Debug for Error<B, CS> {
         match self {
             Error::TransferError(_) => f.debug_struct("TransferError").finish(),
             Error::CSPinError(_) => f.debug_struct("CSPinError").finish(),
+            Error::ChecksumMismatch => f.debug_struct("ChecksumMismatch").finish(),
         }
     }
 }
