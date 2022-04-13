@@ -61,12 +61,12 @@ pub enum CellSelection {
 
 /// Cell voltage registers
 pub enum CellVoltageRegister {
-    RegisterA = 0x4,
-    RegisterB = 0x6,
-    RegisterC = 0x8,
-    RegisterD = 0xA,
-    RegisterE = 0x9,
-    RegisterF = 0xB,
+    RegisterA,
+    RegisterB,
+    RegisterC,
+    RegisterD,
+    RegisterE,
+    RegisterF,
 }
 
 /// Error enum of LTC681X
@@ -131,7 +131,8 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<
     /// Returns one array for each device in daisy chain
     pub fn read_cell_voltages(&mut self, register: CellVoltageRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
         self.cs.set_low().map_err(Error::CSPinError)?;
-        self.send_command(register as u16).map_err(Error::TransferError)?;
+        let mut command = register.to_command();
+        self.bus.transfer(&mut command).map_err(Error::TransferError)?;
 
         let mut result = [[0, 0, 0]; L];
         for i in 0..L {
@@ -207,6 +208,20 @@ impl<B: Transfer<u8>, CS: OutputPin> Debug for Error<B, CS> {
             Error::TransferError(_) => f.debug_struct("TransferError").finish(),
             Error::CSPinError(_) => f.debug_struct("CSPinError").finish(),
             Error::ChecksumMismatch => f.debug_struct("ChecksumMismatch").finish(),
+        }
+    }
+}
+
+impl CellVoltageRegister {
+    /// Returns the precalculated full command
+    pub fn to_command(&self) -> [u8; 4] {
+        match self {
+            CellVoltageRegister::RegisterA => [0x00, 0x04, 0x07, 0xC2],
+            CellVoltageRegister::RegisterB => [0x00, 0x06, 0x9A, 0x94],
+            CellVoltageRegister::RegisterC => [0x00, 0x08, 0x5E, 0x52],
+            CellVoltageRegister::RegisterD => [0x00, 0x0A, 0xC3, 0x04],
+            CellVoltageRegister::RegisterE => [0x00, 0x09, 0xD5, 0x60],
+            CellVoltageRegister::RegisterF => [0x00, 0x0B, 0x48, 0x36],
         }
     }
 }
