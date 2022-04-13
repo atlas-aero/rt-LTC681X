@@ -138,6 +138,22 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>> LTC681X<B, CS, P> {
     }
 }
 
+impl<B: Transfer<u8>, CS: OutputPin> LTC681X<B, CS, SDOLinePolling> {
+    /// Returns false if the ADC is busy
+    /// If ADC is ready, CS line is pulled high
+    pub fn adc_ready(&mut self) -> Result<bool, Error<B, CS>> {
+        let mut command = [0xff];
+        let result = self.bus.transfer(&mut command).map_err(Error::TransferError)?;
+
+        if result[0] == 0xff {
+            self.cs.set_high().map_err(Error::CSPinError)?;
+            return Ok(true);
+        }
+
+        Ok(false)
+    }
+}
+
 impl<B: Transfer<u8>, CS: OutputPin> Debug for Error<B, CS> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {

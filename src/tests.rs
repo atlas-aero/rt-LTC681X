@@ -98,6 +98,59 @@ fn test_start_conv_transfer_error() {
 }
 
 #[test]
+fn test_sdo_polling_ready() {
+    let mut cs = MockPin::new();
+    cs.expect_set_high().times(1).returning(move || Ok(()));
+
+    let mut bus = MockSPIBus::new();
+    bus.expect_transfer().times(1).returning(move |_| Ok(&[0xff]));
+
+    let mut monitor = LTC681X::new(bus, cs).enable_sdo_polling();
+    assert!(monitor.adc_ready().unwrap());
+}
+
+#[test]
+fn test_sdo_polling_not_ready() {
+    let cs = MockPin::new();
+
+    let mut bus = MockSPIBus::new();
+    bus.expect_transfer().times(1).returning(move |_| Ok(&[0x00]));
+
+    let mut monitor = LTC681X::new(bus, cs).enable_sdo_polling();
+    assert!(!monitor.adc_ready().unwrap());
+}
+
+#[test]
+fn test_sdo_polling_transfer_error() {
+    let cs = MockPin::new();
+    let mut bus = MockSPIBus::new();
+    bus.expect_transfer().times(1).returning(move |_| Err(BusError::Error1));
+
+    let mut monitor = LTC681X::new(bus, cs).enable_sdo_polling();
+
+    match monitor.adc_ready().unwrap_err() {
+        Error::TransferError(_) => {}
+        Error::CSPinError(_) => panic!("Unexpected CSPinError"),
+    }
+}
+
+#[test]
+fn test_sdo_polling_cs_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_high().times(1).returning(move || Err(PinError::Error1));
+
+    let mut bus = MockSPIBus::new();
+    bus.expect_transfer().times(1).returning(move |_| Ok(&[0xff]));
+
+    let mut monitor = LTC681X::new(bus, cs).enable_sdo_polling();
+
+    match monitor.adc_ready().unwrap_err() {
+        Error::TransferError(_) => panic!("Unexpected TransferError"),
+        Error::CSPinError(_) => {}
+    }
+}
+
+#[test]
 fn test_pec15_two_bytes() {
     // STSCTRL command
     assert_eq!([0x8e, 0x4e], PEC15::calc(&[0x0, 0x19]));
