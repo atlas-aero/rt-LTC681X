@@ -1,6 +1,6 @@
 use crate::mocks::{BusError, BusMockBuilder, MockPin, MockSPIBus, PinError};
 use crate::monitor::CellVoltageRegister::{RegisterB, RegisterC, RegisterD, RegisterE, RegisterF};
-use crate::monitor::{ADCMode, CellSelection, CellVoltageRegister, Error, LTC681X};
+use crate::monitor::{ADCMode, CellSelection, CellVoltageRegister, Error, GPIOSelection, LTC681X};
 use crate::pec15::PEC15;
 use CellVoltageRegister::RegisterA;
 
@@ -93,6 +93,89 @@ fn test_start_conv_transfer_error() {
     let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs);
 
     let result = monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, false);
+    match result.unwrap_err() {
+        Error::TransferError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_start_conv_gpio_acc_modes() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0101, 0b0110_0000, 0xD3, 0xA0)
+        .expect_command(0b0000_0100, 0b1110_0000, 0x1F, 0xCA)
+        .expect_command(0b0000_0101, 0b1110_0000, 0x97, 0x86)
+        .expect_command(0b0000_0100, 0b0110_0000, 0x5B, 0xEC)
+        .to_mock();
+
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(4));
+    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::All).unwrap();
+    monitor.start_conv_gpio(ADCMode::Fast, GPIOSelection::All).unwrap();
+    monitor.start_conv_gpio(ADCMode::Filtered, GPIOSelection::All).unwrap();
+    monitor.start_conv_gpio(ADCMode::Other, GPIOSelection::All).unwrap();
+}
+
+#[test]
+fn test_start_conv_gpio_cell_groups() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0101, 0b0110_0000, 0xD3, 0xA0)
+        .expect_command(0b0000_0101, 0b0110_0001, 0x58, 0x92)
+        .expect_command(0b0000_0101, 0b0110_0010, 0x4E, 0xF6)
+        .expect_command(0b0000_0101, 0b0110_0011, 0xC5, 0xC4)
+        .expect_command(0b0000_0101, 0b0110_0100, 0x62, 0x3E)
+        .expect_command(0b0000_0101, 0b0110_0101, 0xE9, 0xC)
+        .expect_command(0b0000_0101, 0b0110_0110, 0xFF, 0x68)
+        .to_mock();
+
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(7));
+    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::All).unwrap();
+    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group1).unwrap();
+    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group2).unwrap();
+    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group3).unwrap();
+    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group4).unwrap();
+    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group5).unwrap();
+    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group6).unwrap();
+}
+
+#[test]
+fn test_start_conv_gpio_sdo_polling() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0101, 0b0110_0000, 0xD3, 0xA0)
+        .to_mock();
+
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs).enable_sdo_polling();
+    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::All).unwrap();
+}
+
+#[test]
+fn test_start_conv_gpio_cs_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Err(PinError::Error1));
+
+    let bus = MockSPIBus::new();
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs);
+
+    let result = monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::All);
+    match result.unwrap_err() {
+        Error::CSPinError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_start_conv_gpio_transfer_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let mut bus = MockSPIBus::new();
+    bus.expect_transfer().times(1).returning(move |_| Err(BusError::Error1));
+
+    let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs);
+
+    let result = monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::All);
     match result.unwrap_err() {
         Error::TransferError(_) => {}
         _ => panic!("Unexpected error type"),

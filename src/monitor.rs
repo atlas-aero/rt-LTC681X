@@ -59,6 +59,25 @@ pub enum CellSelection {
     Group6 = 0x6,
 }
 
+/// GPIO selection for ADC conversion, s. page 62 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf)
+/// for conversion times
+pub enum GPIOSelection {
+    /// GPIO 1-5, 2nd Reference, GPIO 6-9
+    All = 0x0,
+    /// GPIO 1 and GPIO 6
+    Group1 = 0x1,
+    /// GPIO 2 and GPIO 7
+    Group2 = 0x2,
+    /// GPIO 3 and GPIO 8
+    Group3 = 0x3,
+    /// GPIO 4 and GPIO 9
+    Group4 = 0x4,
+    /// GPIO 5
+    Group5 = 0x5,
+    /// 2nd Reference
+    Group6 = 0x6,
+}
+
 /// Cell voltage registers
 pub enum CellVoltageRegister {
     RegisterA,
@@ -127,7 +146,24 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<
         self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
     }
 
-    /// Reads and returns the cell voltages of the given register
+    /// Starts GPIOs ADC conversion
+    ///
+    /// # Arguments
+    ///
+    /// * `mode`: ADC mode
+    /// * `channels`: Measures the given GPIO group
+    pub fn start_conv_gpio(&mut self, mode: ADCMode, cells: GPIOSelection) -> Result<(), Error<B, CS>> {
+        self.cs.set_low().map_err(Error::CSPinError)?;
+        let mut command: u16 = 0b0000_0100_0110_0000;
+
+        command |= (mode as u16) << 7;
+        command |= cells as u16;
+
+        self.send_command(command).map_err(Error::TransferError)?;
+        self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
+    }
+
+    /// Reads and returns the cell voltages registers of the given register
     /// Returns one array for each device in daisy chain
     pub fn read_cell_voltages(&mut self, register: CellVoltageRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
         self.cs.set_low().map_err(Error::CSPinError)?;
