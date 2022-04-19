@@ -88,6 +88,14 @@ pub enum CellVoltageRegister {
     RegisterF,
 }
 
+/// Auxiliary registers
+pub enum AuxiliaryRegister {
+    RegisterA,
+    RegisterB,
+    RegisterC,
+    RegisterD,
+}
+
 /// Error enum of LTC681X
 #[derive(PartialEq)]
 pub enum Error<B: Transfer<u8>, CS: OutputPin> {
@@ -166,17 +174,13 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<
     /// Reads and returns the cell voltages registers of the given register
     /// Returns one array for each device in daisy chain
     pub fn read_cell_voltages(&mut self, register: CellVoltageRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
-        self.cs.set_low().map_err(Error::CSPinError)?;
-        let mut command = register.to_command();
-        self.bus.transfer(&mut command).map_err(Error::TransferError)?;
+        self.read_daisy_chain(register.to_command())
+    }
 
-        let mut result = [[0, 0, 0]; L];
-        for item in result.iter_mut().take(L) {
-            *item = self.read()?;
-        }
-
-        self.cs.set_high().map_err(Error::CSPinError)?;
-        Ok(result)
+    /// Reads the auxiliary voltages of the given register
+    /// Returns one array for each device in daisy chain
+    pub fn read_aux_voltages(&mut self, register: AuxiliaryRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
+        self.read_daisy_chain(register.to_command())
     }
 
     /// Sends the given command. Calculates and attaches the PEC checksum
@@ -189,6 +193,20 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<
 
         self.bus.transfer(&mut data)?;
         Ok(())
+    }
+
+    /// Send the given read command and returns the response of all devices in daisy chain
+    fn read_daisy_chain(&mut self, mut command: [u8; 4]) -> Result<[[u16; 3]; L], Error<B, CS>> {
+        self.cs.set_low().map_err(Error::CSPinError)?;
+        self.bus.transfer(&mut command).map_err(Error::TransferError)?;
+
+        let mut result = [[0, 0, 0]; L];
+        for item in result.iter_mut().take(L) {
+            *item = self.read()?;
+        }
+
+        self.cs.set_high().map_err(Error::CSPinError)?;
+        Ok(result)
     }
 
     /// Reads a register
@@ -258,6 +276,18 @@ impl CellVoltageRegister {
             CellVoltageRegister::RegisterD => [0x00, 0x0A, 0xC3, 0x04],
             CellVoltageRegister::RegisterE => [0x00, 0x09, 0xD5, 0x60],
             CellVoltageRegister::RegisterF => [0x00, 0x0B, 0x48, 0x36],
+        }
+    }
+}
+
+impl AuxiliaryRegister {
+    /// Returns the precalculated full command
+    pub fn to_command(&self) -> [u8; 4] {
+        match self {
+            AuxiliaryRegister::RegisterA => [0x00, 0xC, 0xEF, 0xCC],
+            AuxiliaryRegister::RegisterB => [0x00, 0xE, 0x72, 0x9A],
+            AuxiliaryRegister::RegisterC => [0x00, 0xD, 0x64, 0xFE],
+            AuxiliaryRegister::RegisterD => [0x00, 0xF, 0xF9, 0xA8],
         }
     }
 }
