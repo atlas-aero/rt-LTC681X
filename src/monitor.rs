@@ -29,7 +29,7 @@ impl<CS: OutputPin> PollMethod<CS> for NoPolling {
 }
 
 /// ADC frequency and filtering settings
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum ADCMode {
     /// 27kHz or 14kHz in case of CFGAR0=1 configuration
     Fast = 0x1,
@@ -43,7 +43,7 @@ pub enum ADCMode {
 
 /// Cell selection for ADC conversion, s. page 62 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf)
 /// for conversion times
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum CellSelection {
     /// All cells
     All = 0x0,
@@ -63,7 +63,7 @@ pub enum CellSelection {
 
 /// GPIO selection for ADC conversion, s. page 62 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf)
 /// for conversion times
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum GPIOSelection {
     /// GPIO 1-5, 2nd Reference, GPIO 6-9
     All = 0x0,
@@ -82,7 +82,7 @@ pub enum GPIOSelection {
 }
 
 /// Cell voltage registers
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum CellVoltageRegister {
     RegisterA,
     RegisterB,
@@ -93,7 +93,7 @@ pub enum CellVoltageRegister {
 }
 
 /// Auxiliary registers
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum AuxiliaryRegister {
     RegisterA,
     RegisterB,
