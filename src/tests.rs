@@ -11,7 +11,7 @@ fn test_start_conv_cells_acc_modes() {
         .expect_command(0b0000_0010, 0b1110_0000, 0x38, 0x06)
         .expect_command(0b0000_0011, 0b1110_0000, 0xb0, 0x4a)
         .expect_command(0b0000_0010, 0b0110_0000, 0x7c, 0x20)
-        .to_mock();
+        .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(4));
     monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, false).unwrap();
@@ -30,7 +30,7 @@ fn test_start_conv_cells_cell_groups() {
         .expect_command(0b0000_0011, 0b0110_0100, 0x45, 0xF2)
         .expect_command(0b0000_0011, 0b0110_0101, 0xCE, 0xC0)
         .expect_command(0b0000_0011, 0b0110_0110, 0xD8, 0xA4)
-        .to_mock();
+        .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(7));
     monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, false).unwrap();
@@ -47,7 +47,7 @@ fn test_start_conv_permit_charging() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0011, 0b0110_0000, 0xf4, 0x6c)
         .expect_command(0b0000_0011, 0b0111_0000, 0xAF, 0x42)
-        .to_mock();
+        .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(2));
     monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, false).unwrap();
@@ -61,7 +61,7 @@ fn test_start_conv_cells_sdo_polling() {
 
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0011, 0b0110_0000, 0xf4, 0x6c)
-        .to_mock();
+        .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs).enable_sdo_polling();
     monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, false).unwrap();
@@ -106,7 +106,7 @@ fn test_start_conv_gpio_acc_modes() {
         .expect_command(0b0000_0100, 0b1110_0000, 0x1F, 0xCA)
         .expect_command(0b0000_0101, 0b1110_0000, 0x97, 0x86)
         .expect_command(0b0000_0100, 0b0110_0000, 0x5B, 0xEC)
-        .to_mock();
+        .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(4));
     monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::All).unwrap();
@@ -125,7 +125,7 @@ fn test_start_conv_gpio_cell_groups() {
         .expect_command(0b0000_0101, 0b0110_0100, 0x62, 0x3E)
         .expect_command(0b0000_0101, 0b0110_0101, 0xE9, 0xC)
         .expect_command(0b0000_0101, 0b0110_0110, 0xFF, 0x68)
-        .to_mock();
+        .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(7));
     monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::All).unwrap();
@@ -144,7 +144,7 @@ fn test_start_conv_gpio_sdo_polling() {
 
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0101, 0b0110_0000, 0xD3, 0xA0)
-        .to_mock();
+        .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs).enable_sdo_polling();
     monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::All).unwrap();
@@ -240,7 +240,7 @@ fn test_read_cell_voltages_register_a() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_0100, 0x07, 0xC2)
         .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
-        .to_mock();
+        .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(1));
 
@@ -255,7 +255,7 @@ fn test_read_cell_voltages_register_b() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_0110, 0x9A, 0x94)
         .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
-        .to_mock();
+        .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(1));
 
@@ -270,7 +270,7 @@ fn test_read_cell_voltages_register_c() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
         .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
-        .to_mock();
+        .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(1));
 
@@ -285,7 +285,7 @@ fn test_read_cell_voltages_register_d() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1010, 0xC3, 0x4)
         .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
-        .to_mock();
+        .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(1));
 
@@ -300,7 +300,7 @@ fn test_read_cell_voltages_register_e() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
         .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
-        .to_mock();
+        .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(1));
 
@@ -315,7 +315,7 @@ fn test_read_cell_voltages_register_f() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1011, 0x48, 0x36)
         .expect_register_read(&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68])
-        .to_mock();
+        .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, get_cs_no_polling(1));
 
@@ -332,7 +332,7 @@ fn test_read_cell_voltages_multiple_devices() {
         .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
         .expect_register_read(&[0x53, 0x64, 0x76, 0x1E, 0xB9, 0x1E, 0x1B, 0xC6])
         .expect_register_read(&[0xA2, 0x62, 0x05, 0x1F, 0xC9, 0x20, 0xEE, 0x94])
-        .to_mock();
+        .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 3> = LTC681X::new(bus, get_cs_no_polling(1));
 
@@ -359,7 +359,7 @@ fn test_read_cell_voltages_pec_error() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1011, 0x48, 0x36)
         .expect_register_read(&[0x2A, 0x63, 0x8E, 0x1E, 0xEC, 0x1F, 0x11, 0x0D])
-        .to_mock();
+        .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 1> = LTC681X::new(bus, cs);
 

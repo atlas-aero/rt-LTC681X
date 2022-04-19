@@ -65,7 +65,7 @@ impl BusMockBuilder {
         self
     }
 
-    pub fn to_mock(self) -> MockSPIBus {
+    pub fn into_mock(self) -> MockSPIBus {
         self.bus
     }
 }

@@ -129,7 +129,7 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<
     /// # Arguments
     ///
     /// * `mode`: ADC mode
-    /// * `cells`: Measures the given cell gorup
+    /// * `cells`: Measures the given cell group
     /// * `dcp`: True if discharge is permitted during conversion
     pub fn start_conv_cells(&mut self, mode: ADCMode, cells: CellSelection, dcp: bool) -> Result<(), Error<B, CS>> {
         self.cs.set_low().map_err(Error::CSPinError)?;
@@ -151,7 +151,7 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<
     /// # Arguments
     ///
     /// * `mode`: ADC mode
-    /// * `channels`: Measures the given GPIO group
+    /// * `channels`: Measures t:he given GPIO group
     pub fn start_conv_gpio(&mut self, mode: ADCMode, cells: GPIOSelection) -> Result<(), Error<B, CS>> {
         self.cs.set_low().map_err(Error::CSPinError)?;
         let mut command: u16 = 0b0000_0100_0110_0000;
@@ -171,8 +171,8 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<
         self.bus.transfer(&mut command).map_err(Error::TransferError)?;
 
         let mut result = [[0, 0, 0]; L];
-        for i in 0..L {
-            result[i] = self.read()?;
+        for item in result.iter_mut().take(L) {
+            *item = self.read()?;
         }
 
         self.cs.set_high().map_err(Error::CSPinError)?;
@@ -193,7 +193,7 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<
 
     /// Reads a register
     fn read(&mut self) -> Result<[u16; 3], Error<B, CS>> {
-        let mut command = [0xff as u8; 8];
+        let mut command = [0xff_u8; 8];
         let result = self.bus.transfer(&mut command).map_err(TransferError)?;
 
         let pec = PEC15::calc(&result[0..6]);
