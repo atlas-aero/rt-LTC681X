@@ -1,5 +1,7 @@
 use crate::mocks::{BusError, BusMockBuilder, MockPin, MockSPIBus, PinError};
-use crate::monitor::{ADCMode, AuxiliaryRegister, CellSelection, CellVoltageRegister, Error, GPIOSelection, LTC681X};
+use crate::monitor::{
+    ADCMode, AuxiliaryRegister, CellSelection, CellVoltageRegister, Error, GPIOSelection, LTC681XClient, LTC681X,
+};
 use crate::pec15::PEC15;
 
 #[test]

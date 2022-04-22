@@ -41,7 +41,9 @@ pub enum ADCMode {
     Other = 0x0,
 }
 
-/// Cell selection for ADC conversion, s. page 62 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf)
+/// Cell selection for ADC conversion
+///
+/// See page 62 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf>)
 /// for conversion times
 #[derive(Copy, Clone, PartialEq)]
 pub enum CellSelection {
@@ -61,7 +63,9 @@ pub enum CellSelection {
     Group6 = 0x6,
 }
 
-/// GPIO selection for ADC conversion, s. page 62 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf)
+/// GPIO selection for ADC conversion,
+///
+/// See page 62 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf>)
 /// for conversion times
 #[derive(Copy, Clone, PartialEq)]
 pub enum GPIOSelection {
@@ -114,6 +118,36 @@ pub enum Error<B: Transfer<u8>, CS: OutputPin> {
     ChecksumMismatch,
 }
 
+/// Public LTC681X client interface
+pub trait LTC681XClient<const L: usize> {
+    type Error;
+
+    /// Starts ADC conversion of cell voltages
+    ///
+    /// # Arguments
+    ///
+    /// * `mode`: ADC mode
+    /// * `cells`: Measures the given cell group
+    /// * `dcp`: True if discharge is permitted during conversion
+    fn start_conv_cells(&mut self, mode: ADCMode, cells: CellSelection, dcp: bool) -> Result<(), Self::Error>;
+
+    /// Starts GPIOs ADC conversion
+    ///
+    /// # Arguments
+    ///
+    /// * `mode`: ADC mode
+    /// * `channels`: Measures t:he given GPIO group
+    fn start_conv_gpio(&mut self, mode: ADCMode, cells: GPIOSelection) -> Result<(), Self::Error>;
+
+    /// Reads and returns the cell voltages registers of the given register
+    /// Returns one array for each device in daisy chain
+    fn read_cell_voltages(&mut self, register: CellVoltageRegister) -> Result<[[u16; 3]; L], Self::Error>;
+
+    /// Reads the auxiliary voltages of the given register
+    /// Returns one array for each device in daisy chain
+    fn read_aux_voltages(&mut self, register: AuxiliaryRegister) -> Result<[[u16; 3]; L], Self::Error>;
+}
+
 /// Client for LTC681X IC
 pub struct LTC681X<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> {
     /// SPI bus
@@ -136,15 +170,11 @@ impl<B: Transfer<u8>, CS: OutputPin, const L: usize> LTC681X<B, CS, NoPolling, L
     }
 }
 
-impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<B, CS, P, L> {
-    /// Starts ADC conversion of cell voltages
-    ///
-    /// # Arguments
-    ///
-    /// * `mode`: ADC mode
-    /// * `cells`: Measures the given cell group
-    /// * `dcp`: True if discharge is permitted during conversion
-    pub fn start_conv_cells(&mut self, mode: ADCMode, cells: CellSelection, dcp: bool) -> Result<(), Error<B, CS>> {
+impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681XClient<L> for LTC681X<B, CS, P, L> {
+    type Error = Error<B, CS>;
+
+    /// See [LTC681XClient::start_conv_cells](LTC681XClient#tymethod.start_conv_cells)
+    fn start_conv_cells(&mut self, mode: ADCMode, cells: CellSelection, dcp: bool) -> Result<(), Error<B, CS>> {
         self.cs.set_low().map_err(Error::CSPinError)?;
         let mut command: u16 = 0b0000_0010_0110_0000;
 
@@ -159,13 +189,8 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<
         self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
     }
 
-    /// Starts GPIOs ADC conversion
-    ///
-    /// # Arguments
-    ///
-    /// * `mode`: ADC mode
-    /// * `channels`: Measures t:he given GPIO group
-    pub fn start_conv_gpio(&mut self, mode: ADCMode, cells: GPIOSelection) -> Result<(), Error<B, CS>> {
+    /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.start_conv_gpio)
+    fn start_conv_gpio(&mut self, mode: ADCMode, cells: GPIOSelection) -> Result<(), Error<B, CS>> {
         self.cs.set_low().map_err(Error::CSPinError)?;
         let mut command: u16 = 0b0000_0100_0110_0000;
 
@@ -176,18 +201,18 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<
         self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
     }
 
-    /// Reads and returns the cell voltages registers of the given register
-    /// Returns one array for each device in daisy chain
-    pub fn read_cell_voltages(&mut self, register: CellVoltageRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
+    /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_cell_voltages)
+    fn read_cell_voltages(&mut self, register: CellVoltageRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
         self.read_daisy_chain(register.to_command())
     }
 
-    /// Reads the auxiliary voltages of the given register
-    /// Returns one array for each device in daisy chain
-    pub fn read_aux_voltages(&mut self, register: AuxiliaryRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
+    /// See [LTC681XClient::read_aux_voltages](LTC681XClient#tymethod.read_aux_voltages)
+    fn read_aux_voltages(&mut self, register: AuxiliaryRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
         self.read_daisy_chain(register.to_command())
     }
+}
 
+impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<B, CS, P, L> {
     /// Sends the given command. Calculates and attaches the PEC checksum
     fn send_command(&mut self, command: u16) -> Result<(), B::Error> {
         let mut data = [(command >> 8) as u8, command as u8, 0x0, 0x0];
