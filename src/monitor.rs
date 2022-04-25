@@ -148,6 +148,14 @@ pub trait LTC681XClient<const L: usize> {
     fn read_aux_voltages(&mut self, register: AuxiliaryRegister) -> Result<[[u16; 3]; L], Self::Error>;
 }
 
+/// Public LTC681X interface for polling ADC status
+pub trait PollClient {
+    type Error;
+
+    /// Returns true if the ADC is not busy
+    fn adc_ready(&mut self) -> Result<bool, Self::Error>;
+}
+
 /// Client for LTC681X IC
 pub struct LTC681X<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> {
     /// SPI bus
@@ -270,10 +278,12 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<
     }
 }
 
-impl<B: Transfer<u8>, CS: OutputPin, const L: usize> LTC681X<B, CS, SDOLinePolling, L> {
+impl<B: Transfer<u8>, CS: OutputPin, const L: usize> PollClient for LTC681X<B, CS, SDOLinePolling, L> {
+    type Error = Error<B, CS>;
+
     /// Returns false if the ADC is busy
     /// If ADC is ready, CS line is pulled high
-    pub fn adc_ready(&mut self) -> Result<bool, Error<B, CS>> {
+    fn adc_ready(&mut self) -> Result<bool, Self::Error> {
         let mut command = [0xff];
         let result = self.bus.transfer(&mut command).map_err(Error::TransferError)?;
 
