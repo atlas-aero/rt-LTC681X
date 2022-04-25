@@ -1,33 +1,34 @@
-use crate::commands::*;
+use crate::commands::{
+    CMD_AUX_V_REG_A, CMD_AUX_V_REG_B, CMD_AUX_V_REG_C, CMD_AUX_V_REG_D, CMD_CELL_V_REG_A, CMD_CELL_V_REG_B,
+    CMD_CELL_V_REG_C, CMD_CELL_V_REG_D, CMD_CELL_V_REG_E,
+};
 use crate::monitor::{NoPolling, ToCommandBitmap, ToFullCommand, LTC681X};
 use embedded_hal::blocking::spi::Transfer;
 use embedded_hal::digital::v2::OutputPin;
 
 /// Cell selection for ADC conversion
 ///
-/// See page 62 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf>)
+/// See page 61 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6812-1.pdf>)
 /// for conversion times
 #[derive(Copy, Clone, PartialEq)]
 pub enum CellSelection {
     /// All cells
     All = 0x0,
-    /// Cells 1, 7, 13
+    /// Cells 1, 6, 11
     Group1 = 0x1,
-    /// Cells 2, 8, 14
+    /// Cells 2, 7, 12
     Group2 = 0x2,
-    /// Cells 3, 9, 15
+    /// Cells 3, 8, 13
     Group3 = 0x3,
-    /// Cells 4, 10, 16
+    /// Cells 4, 9, 14
     Group4 = 0x4,
-    /// Cells 5, 11, 17
+    /// Cells 5, 10, 15
     Group5 = 0x5,
-    /// cells 6, 12, 18
-    Group6 = 0x6,
 }
 
 /// GPIO selection for ADC conversion,
 ///
-/// See page 62 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf>)
+/// See page 61 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6812-1.pdf>)
 /// for conversion times
 #[derive(Copy, Clone, PartialEq)]
 pub enum GPIOSelection {
@@ -55,7 +56,6 @@ pub enum CellVoltageRegister {
     RegisterC,
     RegisterD,
     RegisterE,
-    RegisterF,
 }
 
 /// Auxiliary registers
@@ -73,8 +73,8 @@ where
     B: Transfer<u8>,
     CS: OutputPin,
 {
-    /// Creates a client instant for LTC6813 variant
-    pub fn ltc6813(bus: B, cs: CS) -> Self {
+    /// Creates a client instant for LTC6812 variant
+    pub fn ltc6812(bus: B, cs: CS) -> Self {
         LTC681X::new(bus, cs)
     }
 }
@@ -100,7 +100,6 @@ impl ToFullCommand for CellVoltageRegister {
             CellVoltageRegister::RegisterC => CMD_CELL_V_REG_C,
             CellVoltageRegister::RegisterD => CMD_CELL_V_REG_D,
             CellVoltageRegister::RegisterE => CMD_CELL_V_REG_E,
-            CellVoltageRegister::RegisterF => CMD_CELL_V_REG_F,
         }
     }
 }
