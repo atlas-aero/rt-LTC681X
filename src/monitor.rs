@@ -1,6 +1,7 @@
 use crate::monitor::Error::TransferError;
 use crate::pec15::PEC15;
 use core::fmt::{Debug, Formatter};
+use core::marker::PhantomData;
 use embedded_hal::blocking::spi::Transfer;
 use embedded_hal::digital::v2::OutputPin;
 
@@ -41,50 +42,6 @@ pub enum ADCMode {
     Other = 0x0,
 }
 
-/// Cell selection for ADC conversion
-///
-/// See page 62 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf>)
-/// for conversion times
-#[derive(Copy, Clone, PartialEq)]
-pub enum CellSelection {
-    /// All cells
-    All = 0x0,
-    /// Cells 1, 7, 13
-    Group1 = 0x1,
-    /// Cells 2, 8, 14
-    Group2 = 0x2,
-    /// Cells 3, 9, 15
-    Group3 = 0x3,
-    /// Cells 4, 10, 16
-    Group4 = 0x4,
-    /// Cells 5, 11, 17
-    Group5 = 0x5,
-    /// cells 6, 12, 18
-    Group6 = 0x6,
-}
-
-/// GPIO selection for ADC conversion,
-///
-/// See page 62 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf>)
-/// for conversion times
-#[derive(Copy, Clone, PartialEq)]
-pub enum GPIOSelection {
-    /// GPIO 1-5, 2nd Reference, GPIO 6-9
-    All = 0x0,
-    /// GPIO 1 and GPIO 6
-    Group1 = 0x1,
-    /// GPIO 2 and GPIO 7
-    Group2 = 0x2,
-    /// GPIO 3 and GPIO 8
-    Group3 = 0x3,
-    /// GPIO 4 and GPIO 9
-    Group4 = 0x4,
-    /// GPIO 5
-    Group5 = 0x5,
-    /// 2nd Reference
-    Group6 = 0x6,
-}
-
 /// Cell voltage registers
 #[derive(Copy, Clone, PartialEq)]
 pub enum CellVoltageRegister {
@@ -118,9 +75,23 @@ pub enum Error<B: Transfer<u8>, CS: OutputPin> {
     ChecksumMismatch,
 }
 
+/// Trait for casting command options to command bitmaps
+pub trait ToCommandBitmap {
+    /// Returns the command bitmap for the given argument.
+    fn to_bitmap(&self) -> u16;
+}
+
 /// Public LTC681X client interface
+///
+/// L: Number of LTC681X devices in daisy chain
 pub trait LTC681XClient<const L: usize> {
     type Error;
+
+    /// Argument for the identification of cell groups, which depends on the exact device type
+    type CellSelection: ToCommandBitmap;
+
+    /// Argument for the identification of GPIO groups, which depends on the exact device type-
+    type GPIOSelection: ToCommandBitmap;
 
     /// Starts ADC conversion of cell voltages
     ///
@@ -129,7 +100,7 @@ pub trait LTC681XClient<const L: usize> {
     /// * `mode`: ADC mode
     /// * `cells`: Measures the given cell group
     /// * `dcp`: True if discharge is permitted during conversion
-    fn start_conv_cells(&mut self, mode: ADCMode, cells: CellSelection, dcp: bool) -> Result<(), Self::Error>;
+    fn start_conv_cells(&mut self, mode: ADCMode, cells: Self::CellSelection, dcp: bool) -> Result<(), Self::Error>;
 
     /// Starts GPIOs ADC conversion
     ///
@@ -137,7 +108,7 @@ pub trait LTC681XClient<const L: usize> {
     ///
     /// * `mode`: ADC mode
     /// * `channels`: Measures t:he given GPIO group
-    fn start_conv_gpio(&mut self, mode: ADCMode, cells: GPIOSelection) -> Result<(), Self::Error>;
+    fn start_conv_gpio(&mut self, mode: ADCMode, cells: Self::GPIOSelection) -> Result<(), Self::Error>;
 
     /// Reads and returns the cell voltages registers of the given register
     /// Returns one array for each device in daisy chain
@@ -157,7 +128,14 @@ pub trait PollClient {
 }
 
 /// Client for LTC681X IC
-pub struct LTC681X<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> {
+pub struct LTC681X<B, CS, P, T1, T2, const L: usize>
+where
+    B: Transfer<u8>,
+    CS: OutputPin,
+    P: PollMethod<CS>,
+    T1: ToCommandBitmap,
+    T2: ToCommandBitmap,
+{
     /// SPI bus
     bus: B,
 
@@ -166,28 +144,48 @@ pub struct LTC681X<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: u
 
     /// Poll method used for type state
     poll_method: P,
+
+    cell_selection_type: PhantomData<T1>,
+    gpio_selection_type: PhantomData<T2>,
 }
 
-impl<B: Transfer<u8>, CS: OutputPin, const L: usize> LTC681X<B, CS, NoPolling, L> {
-    pub fn new(bus: B, cs: CS) -> Self {
+impl<B, CS, T1, T2, const L: usize> LTC681X<B, CS, NoPolling, T1, T2, L>
+where
+    B: Transfer<u8>,
+    CS: OutputPin,
+    T1: ToCommandBitmap,
+    T2: ToCommandBitmap,
+{
+    pub(crate) fn new(bus: B, cs: CS) -> Self {
         LTC681X {
             bus,
             cs,
             poll_method: NoPolling {},
+            cell_selection_type: PhantomData,
+            gpio_selection_type: PhantomData,
         }
     }
 }
 
-impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681XClient<L> for LTC681X<B, CS, P, L> {
+impl<B, CS, P, T1, T2, const L: usize> LTC681XClient<L> for LTC681X<B, CS, P, T1, T2, L>
+where
+    B: Transfer<u8>,
+    CS: OutputPin,
+    P: PollMethod<CS>,
+    T1: ToCommandBitmap,
+    T2: ToCommandBitmap,
+{
     type Error = Error<B, CS>;
+    type CellSelection = T1;
+    type GPIOSelection = T2;
 
     /// See [LTC681XClient::start_conv_cells](LTC681XClient#tymethod.start_conv_cells)
-    fn start_conv_cells(&mut self, mode: ADCMode, cells: CellSelection, dcp: bool) -> Result<(), Error<B, CS>> {
+    fn start_conv_cells(&mut self, mode: ADCMode, cells: Self::CellSelection, dcp: bool) -> Result<(), Error<B, CS>> {
         self.cs.set_low().map_err(Error::CSPinError)?;
         let mut command: u16 = 0b0000_0010_0110_0000;
 
         command |= (mode as u16) << 7;
-        command |= cells as u16;
+        command |= cells.to_bitmap();
 
         if dcp {
             command |= 0b0001_0000;
@@ -198,12 +196,12 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681XC
     }
 
     /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.start_conv_gpio)
-    fn start_conv_gpio(&mut self, mode: ADCMode, cells: GPIOSelection) -> Result<(), Error<B, CS>> {
+    fn start_conv_gpio(&mut self, mode: ADCMode, channels: Self::GPIOSelection) -> Result<(), Error<B, CS>> {
         self.cs.set_low().map_err(Error::CSPinError)?;
         let mut command: u16 = 0b0000_0100_0110_0000;
 
         command |= (mode as u16) << 7;
-        command |= cells as u16;
+        command |= channels.to_bitmap();
 
         self.send_command(command).map_err(Error::TransferError)?;
         self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
@@ -220,7 +218,14 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681XC
     }
 }
 
-impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<B, CS, P, L> {
+impl<B, CS, P, T1, T2, const L: usize> LTC681X<B, CS, P, T1, T2, L>
+where
+    B: Transfer<u8>,
+    CS: OutputPin,
+    P: PollMethod<CS>,
+    T1: ToCommandBitmap,
+    T2: ToCommandBitmap,
+{
     /// Sends the given command. Calculates and attaches the PEC checksum
     fn send_command(&mut self, command: u16) -> Result<(), B::Error> {
         let mut data = [(command >> 8) as u8, command as u8, 0x0, 0x0];
@@ -269,16 +274,24 @@ impl<B: Transfer<u8>, CS: OutputPin, P: PollMethod<CS>, const L: usize> LTC681X<
     ///
     /// After entering a conversion command, the SDO line is driven low when the device is busy
     /// performing conversions. SDO is pulled high when the device completes conversions.
-    pub fn enable_sdo_polling(self) -> LTC681X<B, CS, SDOLinePolling, L> {
+    pub fn enable_sdo_polling(self) -> LTC681X<B, CS, SDOLinePolling, T1, T2, L> {
         LTC681X {
             bus: self.bus,
             cs: self.cs,
             poll_method: SDOLinePolling {},
+            cell_selection_type: PhantomData,
+            gpio_selection_type: PhantomData,
         }
     }
 }
 
-impl<B: Transfer<u8>, CS: OutputPin, const L: usize> PollClient for LTC681X<B, CS, SDOLinePolling, L> {
+impl<B, CS, T1, T2, const L: usize> PollClient for LTC681X<B, CS, SDOLinePolling, T1, T2, L>
+where
+    B: Transfer<u8>,
+    CS: OutputPin,
+    T1: ToCommandBitmap,
+    T2: ToCommandBitmap,
+{
     type Error = Error<B, CS>;
 
     /// Returns false if the ADC is busy

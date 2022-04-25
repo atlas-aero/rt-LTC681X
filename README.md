@@ -2,11 +2,11 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-Abstraction for LTC681X family like [LTC6813](https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf).
+Abstraction for LTC681X family like [ltc6813](https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf).
 
 > :warning: The crate is still very incomplete, but is under active development.
 
-> :warning: The crate has only been tested for the LTC6813 variant. Although the protocol of the LTC681X family is essentially the same, inconsistencies are still conceivable for some variants. Practical tests + feedback with other variants are therefore welcome.
+> :warning: The crate has only been tested for the ltc6813 variant. Although the protocol of the LTC681X family is essentially the same, inconsistencies are still conceivable for some variants. Practical tests + feedback with other variants are therefore welcome.
 
 ## Development
 
