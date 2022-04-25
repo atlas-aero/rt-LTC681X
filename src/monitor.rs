@@ -42,26 +42,6 @@ pub enum ADCMode {
     Other = 0x0,
 }
 
-/// Cell voltage registers
-#[derive(Copy, Clone, PartialEq)]
-pub enum CellVoltageRegister {
-    RegisterA,
-    RegisterB,
-    RegisterC,
-    RegisterD,
-    RegisterE,
-    RegisterF,
-}
-
-/// Auxiliary registers
-#[derive(Copy, Clone, PartialEq)]
-pub enum AuxiliaryRegister {
-    RegisterA,
-    RegisterB,
-    RegisterC,
-    RegisterD,
-}
-
 /// Error enum of LTC681X
 #[derive(PartialEq)]
 pub enum Error<B: Transfer<u8>, CS: OutputPin> {
@@ -81,17 +61,29 @@ pub trait ToCommandBitmap {
     fn to_bitmap(&self) -> u16;
 }
 
+/// Trait for casting to constant (precomputed) commands
+pub trait ToFullCommand {
+    /// Returns the full command + PEC15
+    fn to_command(&self) -> [u8; 4];
+}
+
 /// Public LTC681X client interface
 ///
 /// L: Number of LTC681X devices in daisy chain
 pub trait LTC681XClient<const L: usize> {
     type Error;
 
-    /// Argument for the identification of cell groups, which depends on the exact device type
+    /// Argument for the identification of cell groups, which depends on the exact device type.
     type CellSelection: ToCommandBitmap;
 
-    /// Argument for the identification of GPIO groups, which depends on the exact device type-
+    /// Argument for the identification of GPIO groups, which depends on the exact device type.
     type GPIOSelection: ToCommandBitmap;
+
+    /// Argument for cell voltage register selection. The available registers depend on the device.
+    type CellVoltageRegister: ToFullCommand;
+
+    /// Argument for aux register selection. The available registers depend on the device.
+    type AuxiliaryRegister: ToFullCommand;
 
     /// Starts ADC conversion of cell voltages
     ///
@@ -112,11 +104,11 @@ pub trait LTC681XClient<const L: usize> {
 
     /// Reads and returns the cell voltages registers of the given register
     /// Returns one array for each device in daisy chain
-    fn read_cell_voltages(&mut self, register: CellVoltageRegister) -> Result<[[u16; 3]; L], Self::Error>;
+    fn read_cell_voltages(&mut self, register: Self::CellVoltageRegister) -> Result<[[u16; 3]; L], Self::Error>;
 
     /// Reads the auxiliary voltages of the given register
     /// Returns one array for each device in daisy chain
-    fn read_aux_voltages(&mut self, register: AuxiliaryRegister) -> Result<[[u16; 3]; L], Self::Error>;
+    fn read_aux_voltages(&mut self, register: Self::AuxiliaryRegister) -> Result<[[u16; 3]; L], Self::Error>;
 }
 
 /// Public LTC681X interface for polling ADC status
@@ -128,13 +120,15 @@ pub trait PollClient {
 }
 
 /// Client for LTC681X IC
-pub struct LTC681X<B, CS, P, T1, T2, const L: usize>
+pub struct LTC681X<B, CS, P, T1, T2, T3, T4, const L: usize>
 where
     B: Transfer<u8>,
     CS: OutputPin,
     P: PollMethod<CS>,
     T1: ToCommandBitmap,
     T2: ToCommandBitmap,
+    T3: ToFullCommand,
+    T4: ToFullCommand,
 {
     /// SPI bus
     bus: B,
@@ -147,14 +141,19 @@ where
 
     cell_selection_type: PhantomData<T1>,
     gpio_selection_type: PhantomData<T2>,
+    cell_voltage_register_type: PhantomData<T3>,
+    aux_register_type: PhantomData<T4>,
 }
 
-impl<B, CS, T1, T2, const L: usize> LTC681X<B, CS, NoPolling, T1, T2, L>
+impl<B, CS, T1, T2, T3, T4, const L: usize> LTC681X<B, CS, NoPolling, T1, T2, T3, T4, L>
 where
     B: Transfer<u8>,
     CS: OutputPin,
+
     T1: ToCommandBitmap,
     T2: ToCommandBitmap,
+    T3: ToFullCommand,
+    T4: ToFullCommand,
 {
     pub(crate) fn new(bus: B, cs: CS) -> Self {
         LTC681X {
@@ -163,21 +162,27 @@ where
             poll_method: NoPolling {},
             cell_selection_type: PhantomData,
             gpio_selection_type: PhantomData,
+            cell_voltage_register_type: PhantomData,
+            aux_register_type: PhantomData,
         }
     }
 }
 
-impl<B, CS, P, T1, T2, const L: usize> LTC681XClient<L> for LTC681X<B, CS, P, T1, T2, L>
+impl<B, CS, P, T1, T2, T3, T4, const L: usize> LTC681XClient<L> for LTC681X<B, CS, P, T1, T2, T3, T4, L>
 where
     B: Transfer<u8>,
     CS: OutputPin,
     P: PollMethod<CS>,
     T1: ToCommandBitmap,
     T2: ToCommandBitmap,
+    T3: ToFullCommand,
+    T4: ToFullCommand,
 {
     type Error = Error<B, CS>;
     type CellSelection = T1;
     type GPIOSelection = T2;
+    type CellVoltageRegister = T3;
+    type AuxiliaryRegister = T4;
 
     /// See [LTC681XClient::start_conv_cells](LTC681XClient#tymethod.start_conv_cells)
     fn start_conv_cells(&mut self, mode: ADCMode, cells: Self::CellSelection, dcp: bool) -> Result<(), Error<B, CS>> {
@@ -208,23 +213,25 @@ where
     }
 
     /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_cell_voltages)
-    fn read_cell_voltages(&mut self, register: CellVoltageRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
+    fn read_cell_voltages(&mut self, register: Self::CellVoltageRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
         self.read_daisy_chain(register.to_command())
     }
 
     /// See [LTC681XClient::read_aux_voltages](LTC681XClient#tymethod.read_aux_voltages)
-    fn read_aux_voltages(&mut self, register: AuxiliaryRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
+    fn read_aux_voltages(&mut self, register: Self::AuxiliaryRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
         self.read_daisy_chain(register.to_command())
     }
 }
 
-impl<B, CS, P, T1, T2, const L: usize> LTC681X<B, CS, P, T1, T2, L>
+impl<B, CS, P, T1, T2, T3, T4, const L: usize> LTC681X<B, CS, P, T1, T2, T3, T4, L>
 where
     B: Transfer<u8>,
     CS: OutputPin,
     P: PollMethod<CS>,
     T1: ToCommandBitmap,
     T2: ToCommandBitmap,
+    T3: ToFullCommand,
+    T4: ToFullCommand,
 {
     /// Sends the given command. Calculates and attaches the PEC checksum
     fn send_command(&mut self, command: u16) -> Result<(), B::Error> {
@@ -274,23 +281,27 @@ where
     ///
     /// After entering a conversion command, the SDO line is driven low when the device is busy
     /// performing conversions. SDO is pulled high when the device completes conversions.
-    pub fn enable_sdo_polling(self) -> LTC681X<B, CS, SDOLinePolling, T1, T2, L> {
+    pub fn enable_sdo_polling(self) -> LTC681X<B, CS, SDOLinePolling, T1, T2, T3, T4, L> {
         LTC681X {
             bus: self.bus,
             cs: self.cs,
             poll_method: SDOLinePolling {},
             cell_selection_type: PhantomData,
             gpio_selection_type: PhantomData,
+            cell_voltage_register_type: PhantomData,
+            aux_register_type: PhantomData,
         }
     }
 }
 
-impl<B, CS, T1, T2, const L: usize> PollClient for LTC681X<B, CS, SDOLinePolling, T1, T2, L>
+impl<B, CS, T1, T2, T3, T4, const L: usize> PollClient for LTC681X<B, CS, SDOLinePolling, T1, T2, T3, T4, L>
 where
     B: Transfer<u8>,
     CS: OutputPin,
     T1: ToCommandBitmap,
     T2: ToCommandBitmap,
+    T3: ToFullCommand,
+    T4: ToFullCommand,
 {
     type Error = Error<B, CS>;
 
@@ -315,32 +326,6 @@ impl<B: Transfer<u8>, CS: OutputPin> Debug for Error<B, CS> {
             Error::TransferError(_) => f.debug_struct("TransferError").finish(),
             Error::CSPinError(_) => f.debug_struct("CSPinError").finish(),
             Error::ChecksumMismatch => f.debug_struct("ChecksumMismatch").finish(),
-        }
-    }
-}
-
-impl CellVoltageRegister {
-    /// Returns the precalculated full command
-    pub fn to_command(&self) -> [u8; 4] {
-        match self {
-            CellVoltageRegister::RegisterA => [0x00, 0x04, 0x07, 0xC2],
-            CellVoltageRegister::RegisterB => [0x00, 0x06, 0x9A, 0x94],
-            CellVoltageRegister::RegisterC => [0x00, 0x08, 0x5E, 0x52],
-            CellVoltageRegister::RegisterD => [0x00, 0x0A, 0xC3, 0x04],
-            CellVoltageRegister::RegisterE => [0x00, 0x09, 0xD5, 0x60],
-            CellVoltageRegister::RegisterF => [0x00, 0x0B, 0x48, 0x36],
-        }
-    }
-}
-
-impl AuxiliaryRegister {
-    /// Returns the precalculated full command
-    pub fn to_command(&self) -> [u8; 4] {
-        match self {
-            AuxiliaryRegister::RegisterA => [0x00, 0xC, 0xEF, 0xCC],
-            AuxiliaryRegister::RegisterB => [0x00, 0xE, 0x72, 0x9A],
-            AuxiliaryRegister::RegisterC => [0x00, 0xD, 0x64, 0xFE],
-            AuxiliaryRegister::RegisterD => [0x00, 0xF, 0xF9, 0xA8],
         }
     }
 }
