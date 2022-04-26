@@ -2,7 +2,7 @@ use crate::commands::{
     CMD_AUX_V_REG_A, CMD_AUX_V_REG_B, CMD_AUX_V_REG_C, CMD_AUX_V_REG_D, CMD_CELL_V_REG_A, CMD_CELL_V_REG_B,
     CMD_CELL_V_REG_C, CMD_CELL_V_REG_D, CMD_CELL_V_REG_E,
 };
-use crate::monitor::{NoPolling, ToCommandBitmap, ToFullCommand, LTC681X};
+use crate::monitor::{DeviceTypes, NoPolling, ToCommandBitmap, ToFullCommand, LTC681X};
 use embedded_hal::blocking::spi::Transfer;
 use embedded_hal::digital::v2::OutputPin;
 
@@ -67,8 +67,17 @@ pub enum AuxiliaryRegister {
     RegisterD,
 }
 
-impl<B, CS, const L: usize>
-    LTC681X<B, CS, NoPolling, CellSelection, GPIOSelection, CellVoltageRegister, AuxiliaryRegister, L>
+/// Device type of LTC6813
+pub struct LTC6812 {}
+
+impl DeviceTypes for LTC6812 {
+    type CellSelection = CellSelection;
+    type GPIOSelection = GPIOSelection;
+    type CellVoltageRegister = CellVoltageRegister;
+    type AuxiliaryRegister = AuxiliaryRegister;
+}
+
+impl<B, CS, const L: usize> LTC681X<B, CS, NoPolling, LTC6812, L>
 where
     B: Transfer<u8>,
     CS: OutputPin,

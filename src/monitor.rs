@@ -67,23 +67,26 @@ pub trait ToFullCommand {
     fn to_command(&self) -> [u8; 4];
 }
 
+/// Device specific types
+pub trait DeviceTypes {
+    /// Argument for the identification of cell groups, which depends on the exact device type.
+    type CellSelection: ToCommandBitmap + Copy + Clone;
+
+    /// Argument for the identification of GPIO groups, which depends on the exact device type.
+    type GPIOSelection: ToCommandBitmap + Copy + Clone;
+
+    /// Argument for cell voltage register selection. The available registers depend on the device.
+    type CellVoltageRegister: ToFullCommand + Copy + Clone;
+
+    /// Argument for aux register selection. The available registers depend on the device.
+    type AuxiliaryRegister: ToFullCommand + Copy + Clone;
+}
+
 /// Public LTC681X client interface
 ///
 /// L: Number of LTC681X devices in daisy chain
-pub trait LTC681XClient<const L: usize> {
+pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     type Error;
-
-    /// Argument for the identification of cell groups, which depends on the exact device type.
-    type CellSelection: ToCommandBitmap;
-
-    /// Argument for the identification of GPIO groups, which depends on the exact device type.
-    type GPIOSelection: ToCommandBitmap;
-
-    /// Argument for cell voltage register selection. The available registers depend on the device.
-    type CellVoltageRegister: ToFullCommand;
-
-    /// Argument for aux register selection. The available registers depend on the device.
-    type AuxiliaryRegister: ToFullCommand;
 
     /// Starts ADC conversion of cell voltages
     ///
@@ -92,7 +95,7 @@ pub trait LTC681XClient<const L: usize> {
     /// * `mode`: ADC mode
     /// * `cells`: Measures the given cell group
     /// * `dcp`: True if discharge is permitted during conversion
-    fn start_conv_cells(&mut self, mode: ADCMode, cells: Self::CellSelection, dcp: bool) -> Result<(), Self::Error>;
+    fn start_conv_cells(&mut self, mode: ADCMode, cells: T::CellSelection, dcp: bool) -> Result<(), Self::Error>;
 
     /// Starts GPIOs ADC conversion
     ///
@@ -100,15 +103,15 @@ pub trait LTC681XClient<const L: usize> {
     ///
     /// * `mode`: ADC mode
     /// * `channels`: Measures t:he given GPIO group
-    fn start_conv_gpio(&mut self, mode: ADCMode, cells: Self::GPIOSelection) -> Result<(), Self::Error>;
+    fn start_conv_gpio(&mut self, mode: ADCMode, cells: T::GPIOSelection) -> Result<(), Self::Error>;
 
     /// Reads and returns the cell voltages registers of the given register
     /// Returns one array for each device in daisy chain
-    fn read_cell_voltages(&mut self, register: Self::CellVoltageRegister) -> Result<[[u16; 3]; L], Self::Error>;
+    fn read_cell_voltages(&mut self, register: T::CellVoltageRegister) -> Result<[[u16; 3]; L], Self::Error>;
 
     /// Reads the auxiliary voltages of the given register
     /// Returns one array for each device in daisy chain
-    fn read_aux_voltages(&mut self, register: Self::AuxiliaryRegister) -> Result<[[u16; 3]; L], Self::Error>;
+    fn read_aux_voltages(&mut self, register: T::AuxiliaryRegister) -> Result<[[u16; 3]; L], Self::Error>;
 }
 
 /// Public LTC681X interface for polling ADC status
@@ -120,15 +123,12 @@ pub trait PollClient {
 }
 
 /// Client for LTC681X IC
-pub struct LTC681X<B, CS, P, T1, T2, T3, T4, const L: usize>
+pub struct LTC681X<B, CS, P, T, const L: usize>
 where
     B: Transfer<u8>,
     CS: OutputPin,
     P: PollMethod<CS>,
-    T1: ToCommandBitmap,
-    T2: ToCommandBitmap,
-    T3: ToFullCommand,
-    T4: ToFullCommand,
+    T: DeviceTypes,
 {
     /// SPI bus
     bus: B,
@@ -139,53 +139,36 @@ where
     /// Poll method used for type state
     poll_method: P,
 
-    cell_selection_type: PhantomData<T1>,
-    gpio_selection_type: PhantomData<T2>,
-    cell_voltage_register_type: PhantomData<T3>,
-    aux_register_type: PhantomData<T4>,
+    device_types: PhantomData<T>,
 }
 
-impl<B, CS, T1, T2, T3, T4, const L: usize> LTC681X<B, CS, NoPolling, T1, T2, T3, T4, L>
+impl<B, CS, T, const L: usize> LTC681X<B, CS, NoPolling, T, L>
 where
     B: Transfer<u8>,
     CS: OutputPin,
-
-    T1: ToCommandBitmap,
-    T2: ToCommandBitmap,
-    T3: ToFullCommand,
-    T4: ToFullCommand,
+    T: DeviceTypes,
 {
     pub(crate) fn new(bus: B, cs: CS) -> Self {
         LTC681X {
             bus,
             cs,
             poll_method: NoPolling {},
-            cell_selection_type: PhantomData,
-            gpio_selection_type: PhantomData,
-            cell_voltage_register_type: PhantomData,
-            aux_register_type: PhantomData,
+            device_types: PhantomData,
         }
     }
 }
 
-impl<B, CS, P, T1, T2, T3, T4, const L: usize> LTC681XClient<L> for LTC681X<B, CS, P, T1, T2, T3, T4, L>
+impl<B, CS, P, T, const L: usize> LTC681XClient<T, L> for LTC681X<B, CS, P, T, L>
 where
     B: Transfer<u8>,
     CS: OutputPin,
     P: PollMethod<CS>,
-    T1: ToCommandBitmap,
-    T2: ToCommandBitmap,
-    T3: ToFullCommand,
-    T4: ToFullCommand,
+    T: DeviceTypes,
 {
     type Error = Error<B, CS>;
-    type CellSelection = T1;
-    type GPIOSelection = T2;
-    type CellVoltageRegister = T3;
-    type AuxiliaryRegister = T4;
 
     /// See [LTC681XClient::start_conv_cells](LTC681XClient#tymethod.start_conv_cells)
-    fn start_conv_cells(&mut self, mode: ADCMode, cells: Self::CellSelection, dcp: bool) -> Result<(), Error<B, CS>> {
+    fn start_conv_cells(&mut self, mode: ADCMode, cells: T::CellSelection, dcp: bool) -> Result<(), Error<B, CS>> {
         self.cs.set_low().map_err(Error::CSPinError)?;
         let mut command: u16 = 0b0000_0010_0110_0000;
 
@@ -201,7 +184,7 @@ where
     }
 
     /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.start_conv_gpio)
-    fn start_conv_gpio(&mut self, mode: ADCMode, channels: Self::GPIOSelection) -> Result<(), Error<B, CS>> {
+    fn start_conv_gpio(&mut self, mode: ADCMode, channels: T::GPIOSelection) -> Result<(), Error<B, CS>> {
         self.cs.set_low().map_err(Error::CSPinError)?;
         let mut command: u16 = 0b0000_0100_0110_0000;
 
@@ -213,25 +196,22 @@ where
     }
 
     /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_cell_voltages)
-    fn read_cell_voltages(&mut self, register: Self::CellVoltageRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
+    fn read_cell_voltages(&mut self, register: T::CellVoltageRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
         self.read_daisy_chain(register.to_command())
     }
 
     /// See [LTC681XClient::read_aux_voltages](LTC681XClient#tymethod.read_aux_voltages)
-    fn read_aux_voltages(&mut self, register: Self::AuxiliaryRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
+    fn read_aux_voltages(&mut self, register: T::AuxiliaryRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
         self.read_daisy_chain(register.to_command())
     }
 }
 
-impl<B, CS, P, T1, T2, T3, T4, const L: usize> LTC681X<B, CS, P, T1, T2, T3, T4, L>
+impl<B, CS, P, T, const L: usize> LTC681X<B, CS, P, T, L>
 where
     B: Transfer<u8>,
     CS: OutputPin,
     P: PollMethod<CS>,
-    T1: ToCommandBitmap,
-    T2: ToCommandBitmap,
-    T3: ToFullCommand,
-    T4: ToFullCommand,
+    T: DeviceTypes,
 {
     /// Sends the given command. Calculates and attaches the PEC checksum
     fn send_command(&mut self, command: u16) -> Result<(), B::Error> {
@@ -281,27 +261,21 @@ where
     ///
     /// After entering a conversion command, the SDO line is driven low when the device is busy
     /// performing conversions. SDO is pulled high when the device completes conversions.
-    pub fn enable_sdo_polling(self) -> LTC681X<B, CS, SDOLinePolling, T1, T2, T3, T4, L> {
+    pub fn enable_sdo_polling(self) -> LTC681X<B, CS, SDOLinePolling, T, L> {
         LTC681X {
             bus: self.bus,
             cs: self.cs,
             poll_method: SDOLinePolling {},
-            cell_selection_type: PhantomData,
-            gpio_selection_type: PhantomData,
-            cell_voltage_register_type: PhantomData,
-            aux_register_type: PhantomData,
+            device_types: PhantomData,
         }
     }
 }
 
-impl<B, CS, T1, T2, T3, T4, const L: usize> PollClient for LTC681X<B, CS, SDOLinePolling, T1, T2, T3, T4, L>
+impl<B, CS, T, const L: usize> PollClient for LTC681X<B, CS, SDOLinePolling, T, L>
 where
     B: Transfer<u8>,
     CS: OutputPin,
-    T1: ToCommandBitmap,
-    T2: ToCommandBitmap,
-    T3: ToFullCommand,
-    T4: ToFullCommand,
+    T: DeviceTypes,
 {
     type Error = Error<B, CS>;
 
