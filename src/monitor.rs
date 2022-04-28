@@ -76,10 +76,7 @@ pub trait DeviceTypes {
     type GPIOSelection: ToCommandBitmap + Copy + Clone;
 
     /// Argument for cell voltage register selection. The available registers depend on the device.
-    type CellVoltageRegister: ToFullCommand + Copy + Clone;
-
-    /// Argument for aux register selection. The available registers depend on the device.
-    type AuxiliaryRegister: ToFullCommand + Copy + Clone;
+    type Register: ToFullCommand + Copy + Clone;
 }
 
 /// Public LTC681X client interface
@@ -105,13 +102,9 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     /// * `channels`: Measures t:he given GPIO group
     fn start_conv_gpio(&mut self, mode: ADCMode, cells: T::GPIOSelection) -> Result<(), Self::Error>;
 
-    /// Reads and returns the cell voltages registers of the given register
+    /// Reads the values of the given register
     /// Returns one array for each device in daisy chain
-    fn read_cell_voltages(&mut self, register: T::CellVoltageRegister) -> Result<[[u16; 3]; L], Self::Error>;
-
-    /// Reads the auxiliary voltages of the given register
-    /// Returns one array for each device in daisy chain
-    fn read_aux_voltages(&mut self, register: T::AuxiliaryRegister) -> Result<[[u16; 3]; L], Self::Error>;
+    fn read_register(&mut self, register: T::Register) -> Result<[[u16; 3]; L], Self::Error>;
 }
 
 /// Public LTC681X interface for polling ADC status
@@ -196,12 +189,7 @@ where
     }
 
     /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_cell_voltages)
-    fn read_cell_voltages(&mut self, register: T::CellVoltageRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
-        self.read_daisy_chain(register.to_command())
-    }
-
-    /// See [LTC681XClient::read_aux_voltages](LTC681XClient#tymethod.read_aux_voltages)
-    fn read_aux_voltages(&mut self, register: T::AuxiliaryRegister) -> Result<[[u16; 3]; L], Error<B, CS>> {
+    fn read_register(&mut self, register: T::Register) -> Result<[[u16; 3]; L], Error<B, CS>> {
         self.read_daisy_chain(register.to_command())
     }
 }

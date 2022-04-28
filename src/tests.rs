@@ -1,4 +1,4 @@
-use crate::ltc6813::{AuxiliaryRegister, CellSelection, CellVoltageRegister, GPIOSelection};
+use crate::ltc6813::{CellSelection, GPIOSelection, Register};
 use crate::mocks::{BusError, BusMockBuilder, MockPin, MockSPIBus, PinError};
 use crate::monitor::{ADCMode, Error, LTC681XClient, PollClient, LTC681X};
 use crate::pec15::PEC15;
@@ -243,7 +243,7 @@ fn test_read_cell_voltages_register_a() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
 
-    let result = monitor.read_cell_voltages(CellVoltageRegister::RegisterA).unwrap();
+    let result = monitor.read_register(Register::CellVoltageA).unwrap();
     assert_eq!(24979, result[0][0]);
     assert_eq!(7867, result[0][1]);
     assert_eq!(8878, result[0][2]);
@@ -258,7 +258,7 @@ fn test_read_cell_voltages_register_b() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
 
-    let result = monitor.read_cell_voltages(CellVoltageRegister::RegisterB).unwrap();
+    let result = monitor.read_register(Register::CellVoltageB).unwrap();
     assert_eq!(26333, result[0][0]);
     assert_eq!(7538, result[0][1]);
     assert_eq!(7330, result[0][2]);
@@ -273,7 +273,7 @@ fn test_read_cell_voltages_register_c() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
 
-    let result = monitor.read_cell_voltages(CellVoltageRegister::RegisterC).unwrap();
+    let result = monitor.read_register(Register::CellVoltageC).unwrap();
     assert_eq!(25441, result[0][0]);
     assert_eq!(7869, result[0][1]);
     assert_eq!(8932, result[0][2]);
@@ -288,7 +288,7 @@ fn test_read_cell_voltages_register_d() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
 
-    let result = monitor.read_cell_voltages(CellVoltageRegister::RegisterD).unwrap();
+    let result = monitor.read_register(Register::CellVoltageD).unwrap();
     assert_eq!(24970, result[0][0]);
     assert_eq!(8033, result[0][1]);
     assert_eq!(8655, result[0][2]);
@@ -303,7 +303,7 @@ fn test_read_cell_voltages_register_e() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
 
-    let result = monitor.read_cell_voltages(CellVoltageRegister::RegisterE).unwrap();
+    let result = monitor.read_register(Register::CellVoltageE).unwrap();
     assert_eq!(25822, result[0][0]);
     assert_eq!(8591, result[0][1]);
     assert_eq!(8586, result[0][2]);
@@ -318,7 +318,7 @@ fn test_read_cell_voltages_register_f() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
 
-    let result = monitor.read_cell_voltages(CellVoltageRegister::RegisterF).unwrap();
+    let result = monitor.read_register(Register::CellVoltageF).unwrap();
     assert_eq!(25344, result[0][0]);
     assert_eq!(7983, result[0][1]);
     assert_eq!(8075, result[0][2]);
@@ -335,7 +335,7 @@ fn test_read_cell_voltages_multiple_devices() {
 
     let mut monitor: LTC681X<_, _, _, _, 3> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
 
-    let result = monitor.read_cell_voltages(CellVoltageRegister::RegisterD).unwrap();
+    let result = monitor.read_register(Register::CellVoltageD).unwrap();
 
     assert_eq!(24970, result[0][0]);
     assert_eq!(8033, result[0][1]);
@@ -362,7 +362,7 @@ fn test_read_cell_voltages_pec_error() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
 
-    let result = monitor.read_cell_voltages(CellVoltageRegister::RegisterF);
+    let result = monitor.read_register(Register::CellVoltageF);
     match result.unwrap_err() {
         Error::ChecksumMismatch => {}
         _ => panic!("Unexpected error type"),
@@ -378,7 +378,7 @@ fn test_read_cell_voltages_cs_error() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
 
-    let result = monitor.read_cell_voltages(CellVoltageRegister::RegisterF);
+    let result = monitor.read_register(Register::CellVoltageF);
     match result.unwrap_err() {
         Error::CSPinError(_) => {}
         _ => panic!("Unexpected error type"),
@@ -395,7 +395,7 @@ fn test_read_cell_voltages_transfer_error() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
 
-    let result = monitor.read_cell_voltages(CellVoltageRegister::RegisterF);
+    let result = monitor.read_register(Register::CellVoltageF);
     match result.unwrap_err() {
         Error::TransferError(_) => {}
         _ => panic!("Unexpected error type"),
@@ -403,7 +403,7 @@ fn test_read_cell_voltages_transfer_error() {
 }
 
 #[test]
-fn test_read_aux_voltages_register_a() {
+fn test_read_register_register_a() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1100, 0xEF, 0xCC)
         .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
@@ -411,14 +411,14 @@ fn test_read_aux_voltages_register_a() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
 
-    let result = monitor.read_aux_voltages(AuxiliaryRegister::RegisterA).unwrap();
+    let result = monitor.read_register(Register::AuxiliaryA).unwrap();
     assert_eq!(24979, result[0][0]);
     assert_eq!(7867, result[0][1]);
     assert_eq!(8878, result[0][2]);
 }
 
 #[test]
-fn test_read_aux_voltages_register_b() {
+fn test_read_register_register_b() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1110, 0x72, 0x9A)
         .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
@@ -426,14 +426,14 @@ fn test_read_aux_voltages_register_b() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
 
-    let result = monitor.read_aux_voltages(AuxiliaryRegister::RegisterB).unwrap();
+    let result = monitor.read_register(Register::AuxiliaryB).unwrap();
     assert_eq!(26333, result[0][0]);
     assert_eq!(7538, result[0][1]);
     assert_eq!(7330, result[0][2]);
 }
 
 #[test]
-fn test_read_aux_voltages_register_c() {
+fn test_read_register_register_c() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1101, 0x64, 0xFE)
         .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
@@ -441,14 +441,14 @@ fn test_read_aux_voltages_register_c() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
 
-    let result = monitor.read_aux_voltages(AuxiliaryRegister::RegisterC).unwrap();
+    let result = monitor.read_register(Register::AuxiliaryC).unwrap();
     assert_eq!(25441, result[0][0]);
     assert_eq!(7869, result[0][1]);
     assert_eq!(8932, result[0][2]);
 }
 
 #[test]
-fn test_read_aux_voltages_register_d() {
+fn test_read_register_register_d() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1111, 0xF9, 0xA8)
         .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
@@ -456,14 +456,14 @@ fn test_read_aux_voltages_register_d() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
 
-    let result = monitor.read_aux_voltages(AuxiliaryRegister::RegisterD).unwrap();
+    let result = monitor.read_register(Register::AuxiliaryD).unwrap();
     assert_eq!(24970, result[0][0]);
     assert_eq!(8033, result[0][1]);
     assert_eq!(8655, result[0][2]);
 }
 
 #[test]
-fn test_read_aux_voltages_multiple_devices() {
+fn test_read_register_multiple_devices() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1111, 0xF9, 0xA8)
         .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
@@ -473,7 +473,7 @@ fn test_read_aux_voltages_multiple_devices() {
 
     let mut monitor: LTC681X<_, _, _, _, 3> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
 
-    let result = monitor.read_aux_voltages(AuxiliaryRegister::RegisterD).unwrap();
+    let result = monitor.read_register(Register::AuxiliaryD).unwrap();
 
     assert_eq!(24970, result[0][0]);
     assert_eq!(8033, result[0][1]);
@@ -489,7 +489,7 @@ fn test_read_aux_voltages_multiple_devices() {
 }
 
 #[test]
-fn test_read_aux_voltages_pec_error() {
+fn test_read_register_pec_error() {
     let mut cs = MockPin::new();
     cs.expect_set_low().times(1).returning(move || Ok(()));
 
@@ -500,7 +500,7 @@ fn test_read_aux_voltages_pec_error() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
 
-    let result = monitor.read_aux_voltages(AuxiliaryRegister::RegisterD);
+    let result = monitor.read_register(Register::AuxiliaryD);
     match result.unwrap_err() {
         Error::ChecksumMismatch => {}
         _ => panic!("Unexpected error type"),
@@ -508,7 +508,7 @@ fn test_read_aux_voltages_pec_error() {
 }
 
 #[test]
-fn test_read_aux_voltages_cs_error() {
+fn test_read_register_cs_error() {
     let mut cs = MockPin::new();
     cs.expect_set_low().times(1).returning(move || Err(PinError::Error1));
 
@@ -516,7 +516,7 @@ fn test_read_aux_voltages_cs_error() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
 
-    let result = monitor.read_aux_voltages(AuxiliaryRegister::RegisterD);
+    let result = monitor.read_register(Register::AuxiliaryD);
     match result.unwrap_err() {
         Error::CSPinError(_) => {}
         _ => panic!("Unexpected error type"),
@@ -524,7 +524,7 @@ fn test_read_aux_voltages_cs_error() {
 }
 
 #[test]
-fn test_read_aux_voltages_transfer_error() {
+fn test_read_register_transfer_error() {
     let mut cs = MockPin::new();
     cs.expect_set_low().times(1).returning(move || Ok(()));
 
@@ -533,7 +533,7 @@ fn test_read_aux_voltages_transfer_error() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
 
-    let result = monitor.read_aux_voltages(AuxiliaryRegister::RegisterD);
+    let result = monitor.read_register(Register::AuxiliaryD);
     match result.unwrap_err() {
         Error::TransferError(_) => {}
         _ => panic!("Unexpected error type"),

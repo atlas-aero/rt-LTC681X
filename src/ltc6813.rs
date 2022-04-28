@@ -47,24 +47,19 @@ pub enum GPIOSelection {
     Group6 = 0x6,
 }
 
-/// Cell voltage registers
+/// Available registers
 #[derive(Copy, Clone, PartialEq)]
-pub enum CellVoltageRegister {
-    RegisterA,
-    RegisterB,
-    RegisterC,
-    RegisterD,
-    RegisterE,
-    RegisterF,
-}
-
-/// Auxiliary registers
-#[derive(Copy, Clone, PartialEq)]
-pub enum AuxiliaryRegister {
-    RegisterA,
-    RegisterB,
-    RegisterC,
-    RegisterD,
+pub enum Register {
+    CellVoltageA,
+    CellVoltageB,
+    CellVoltageC,
+    CellVoltageD,
+    CellVoltageE,
+    CellVoltageF,
+    AuxiliaryA,
+    AuxiliaryB,
+    AuxiliaryC,
+    AuxiliaryD,
 }
 
 /// Device type of LTC6813
@@ -73,8 +68,7 @@ pub struct LTC6813 {}
 impl DeviceTypes for LTC6813 {
     type CellSelection = CellSelection;
     type GPIOSelection = GPIOSelection;
-    type CellVoltageRegister = CellVoltageRegister;
-    type AuxiliaryRegister = AuxiliaryRegister;
+    type Register = Register;
 }
 
 impl<B, CS, const L: usize> LTC681X<B, CS, NoPolling, LTC6813, L>
@@ -100,28 +94,20 @@ impl ToCommandBitmap for GPIOSelection {
     }
 }
 
-impl ToFullCommand for CellVoltageRegister {
+impl ToFullCommand for Register {
     /// Returns the precalculated full command
     fn to_command(&self) -> [u8; 4] {
         match self {
-            CellVoltageRegister::RegisterA => CMD_CELL_V_REG_A,
-            CellVoltageRegister::RegisterB => CMD_CELL_V_REG_B,
-            CellVoltageRegister::RegisterC => CMD_CELL_V_REG_C,
-            CellVoltageRegister::RegisterD => CMD_CELL_V_REG_D,
-            CellVoltageRegister::RegisterE => CMD_CELL_V_REG_E,
-            CellVoltageRegister::RegisterF => CMD_CELL_V_REG_F,
-        }
-    }
-}
-
-impl ToFullCommand for AuxiliaryRegister {
-    /// Returns the precalculated full command
-    fn to_command(&self) -> [u8; 4] {
-        match self {
-            AuxiliaryRegister::RegisterA => CMD_AUX_V_REG_A,
-            AuxiliaryRegister::RegisterB => CMD_AUX_V_REG_B,
-            AuxiliaryRegister::RegisterC => CMD_AUX_V_REG_C,
-            AuxiliaryRegister::RegisterD => CMD_AUX_V_REG_D,
+            Register::CellVoltageA => CMD_CELL_V_REG_A,
+            Register::CellVoltageB => CMD_CELL_V_REG_B,
+            Register::CellVoltageC => CMD_CELL_V_REG_C,
+            Register::CellVoltageD => CMD_CELL_V_REG_D,
+            Register::CellVoltageE => CMD_CELL_V_REG_E,
+            Register::CellVoltageF => CMD_CELL_V_REG_F,
+            Register::AuxiliaryA => CMD_AUX_V_REG_A,
+            Register::AuxiliaryB => CMD_AUX_V_REG_B,
+            Register::AuxiliaryC => CMD_AUX_V_REG_C,
+            Register::AuxiliaryD => CMD_AUX_V_REG_D,
         }
     }
 }

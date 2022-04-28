@@ -35,18 +35,13 @@ pub enum GPIOSelection {
     SecondReference = 0x6,
 }
 
-/// Cell voltage registers
+/// Available registers
 #[derive(Copy, Clone, PartialEq)]
-pub enum CellVoltageRegister {
-    RegisterA,
-    RegisterB,
-}
-
-/// Auxiliary registers
-#[derive(Copy, Clone, PartialEq)]
-pub enum AuxiliaryRegister {
-    RegisterA,
-    RegisterB,
+pub enum Register {
+    CellVoltageA,
+    CellVoltageB,
+    AuxiliaryA,
+    AuxiliaryB,
 }
 
 /// Device type of LTC6813
@@ -55,8 +50,7 @@ pub struct LTC6810 {}
 impl DeviceTypes for LTC6810 {
     type CellSelection = CellSelection;
     type GPIOSelection = GPIOSelection;
-    type CellVoltageRegister = CellVoltageRegister;
-    type AuxiliaryRegister = AuxiliaryRegister;
+    type Register = Register;
 }
 
 impl<B, CS, const L: usize> LTC681X<B, CS, NoPolling, LTC6810, L>
@@ -82,22 +76,14 @@ impl ToCommandBitmap for GPIOSelection {
     }
 }
 
-impl ToFullCommand for CellVoltageRegister {
+impl ToFullCommand for Register {
     /// Returns the precalculated full command
     fn to_command(&self) -> [u8; 4] {
         match self {
-            CellVoltageRegister::RegisterA => CMD_CELL_V_REG_A,
-            CellVoltageRegister::RegisterB => CMD_CELL_V_REG_B,
-        }
-    }
-}
-
-impl ToFullCommand for AuxiliaryRegister {
-    /// Returns the precalculated full command
-    fn to_command(&self) -> [u8; 4] {
-        match self {
-            AuxiliaryRegister::RegisterA => CMD_AUX_V_REG_A,
-            AuxiliaryRegister::RegisterB => CMD_AUX_V_REG_B,
+            Register::CellVoltageA => CMD_CELL_V_REG_A,
+            Register::CellVoltageB => CMD_CELL_V_REG_B,
+            Register::AuxiliaryA => CMD_AUX_V_REG_A,
+            Register::AuxiliaryB => CMD_AUX_V_REG_B,
         }
     }
 }

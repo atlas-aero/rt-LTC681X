@@ -43,20 +43,15 @@ pub enum GPIOSelection {
     SecondReference = 0x6,
 }
 
-/// Cell voltage registers
+/// Available registers
 #[derive(Copy, Clone, PartialEq)]
-pub enum CellVoltageRegister {
-    RegisterA,
-    RegisterB,
-    RegisterC,
-    RegisterD,
-}
-
-/// Auxiliary registers
-#[derive(Copy, Clone, PartialEq)]
-pub enum AuxiliaryRegister {
-    RegisterA,
-    RegisterB,
+pub enum Register {
+    CellVoltageA,
+    CellVoltageB,
+    CellVoltageC,
+    CellVoltageD,
+    AuxiliaryA,
+    AuxiliaryB,
 }
 
 /// Device type of LTC6813
@@ -65,8 +60,7 @@ pub struct LTC6811 {}
 impl DeviceTypes for LTC6811 {
     type CellSelection = CellSelection;
     type GPIOSelection = GPIOSelection;
-    type CellVoltageRegister = CellVoltageRegister;
-    type AuxiliaryRegister = AuxiliaryRegister;
+    type Register = Register;
 }
 
 impl<B, CS, const L: usize> LTC681X<B, CS, NoPolling, LTC6811, L>
@@ -92,24 +86,16 @@ impl ToCommandBitmap for GPIOSelection {
     }
 }
 
-impl ToFullCommand for CellVoltageRegister {
+impl ToFullCommand for Register {
     /// Returns the precalculated full command
     fn to_command(&self) -> [u8; 4] {
         match self {
-            CellVoltageRegister::RegisterA => CMD_CELL_V_REG_A,
-            CellVoltageRegister::RegisterB => CMD_CELL_V_REG_B,
-            CellVoltageRegister::RegisterC => CMD_CELL_V_REG_C,
-            CellVoltageRegister::RegisterD => CMD_CELL_V_REG_D,
-        }
-    }
-}
-
-impl ToFullCommand for AuxiliaryRegister {
-    /// Returns the precalculated full command
-    fn to_command(&self) -> [u8; 4] {
-        match self {
-            AuxiliaryRegister::RegisterA => CMD_AUX_V_REG_A,
-            AuxiliaryRegister::RegisterB => CMD_AUX_V_REG_B,
+            Register::CellVoltageA => CMD_CELL_V_REG_A,
+            Register::CellVoltageB => CMD_CELL_V_REG_B,
+            Register::CellVoltageC => CMD_CELL_V_REG_C,
+            Register::CellVoltageD => CMD_CELL_V_REG_D,
+            Register::AuxiliaryA => CMD_AUX_V_REG_A,
+            Register::AuxiliaryB => CMD_AUX_V_REG_B,
         }
     }
 }
