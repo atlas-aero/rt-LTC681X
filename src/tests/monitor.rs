@@ -1,7 +1,7 @@
-use crate::ltc6813::{CellSelection, GPIOSelection, Register};
+//! Tests for generic, device type independent, logic
+use crate::ltc6813::{CellSelection, Channel, GPIOSelection, Register};
 use crate::mocks::{BusError, BusMockBuilder, MockPin, MockSPIBus, PinError};
 use crate::monitor::{ADCMode, Error, LTC681XClient, PollClient, LTC681X};
-use crate::pec15::PEC15;
 
 #[test]
 fn test_start_conv_cells_acc_modes() {
@@ -541,22 +541,513 @@ fn test_read_register_transfer_error() {
 }
 
 #[test]
-fn test_pec15_two_bytes() {
-    // STSCTRL command
-    assert_eq!([0x8e, 0x4e], PEC15::calc(&[0x0, 0x19]));
+fn test_read_voltages_cell_group_1() {
+    let bus = BusMockBuilder::new()
+        // Register A
+        .expect_command(0b0000_0000, 0b0000_0100, 0x07, 0xC2)
+        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        // Register C
+        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
+        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        // Register E
+        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
+        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .into_mock();
 
-    // CLRSCTRL command
-    assert_eq!([0x5, 0x7c], PEC15::calc(&[0x0, 0x18]));
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(3));
 
-    // Cell Voltage register A
-    assert_eq!([7, 194], PEC15::calc(&[0x0, 0x4]));
+    let result = monitor.read_voltages(CellSelection::Group1).unwrap();
+    assert_eq!(3, result[0].len());
+
+    assert_eq!(Channel::Cell1, result[0][0].channel);
+    assert_eq!(24979, result[0][0].voltage);
+
+    assert_eq!(Channel::Cell7, result[0][1].channel);
+    assert_eq!(25441, result[0][1].voltage);
+
+    assert_eq!(Channel::Cell13, result[0][2].channel);
+    assert_eq!(25822, result[0][2].voltage);
 }
 
 #[test]
-fn test_pec15_multiple_bytes() {
-    assert_eq!([0x37, 0x9e], PEC15::calc(&[0x32, 0x67, 0xF2, 0x1E, 0x5F, 0x24]));
-    assert_eq!([0x98, 0x84], PEC15::calc(&[0xCD, 0x62, 0x11, 0x1F, 0x83, 0x24]));
-    assert_eq!([0x1B, 0xE6], PEC15::calc(&[0xC9, 0x62, 0x7C, 0x1C, 0x1A, 0x21]));
+fn test_read_voltages_cell_group_2() {
+    let bus = BusMockBuilder::new()
+        // Register A
+        .expect_command(0b0000_0000, 0b0000_0100, 0x07, 0xC2)
+        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        // Register C
+        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
+        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        // Register E
+        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
+        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(3));
+
+    let result = monitor.read_voltages(CellSelection::Group2).unwrap();
+    assert_eq!(3, result[0].len());
+
+    assert_eq!(Channel::Cell2, result[0][0].channel);
+    assert_eq!(7867, result[0][0].voltage);
+
+    assert_eq!(Channel::Cell8, result[0][1].channel);
+    assert_eq!(7869, result[0][1].voltage);
+
+    assert_eq!(Channel::Cell14, result[0][2].channel);
+    assert_eq!(8591, result[0][2].voltage);
+}
+
+#[test]
+fn test_read_voltages_cell_group_3() {
+    let bus = BusMockBuilder::new()
+        // Register A
+        .expect_command(0b0000_0000, 0b0000_0100, 0x07, 0xC2)
+        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        // Register C
+        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
+        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        // Register E
+        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
+        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(3));
+
+    let result = monitor.read_voltages(CellSelection::Group3).unwrap();
+    assert_eq!(3, result[0].len());
+
+    assert_eq!(Channel::Cell3, result[0][0].channel);
+    assert_eq!(8878, result[0][0].voltage);
+
+    assert_eq!(Channel::Cell9, result[0][1].channel);
+    assert_eq!(8932, result[0][1].voltage);
+
+    assert_eq!(Channel::Cell15, result[0][2].channel);
+    assert_eq!(8586, result[0][2].voltage);
+}
+
+#[test]
+fn test_read_voltages_cell_group_4() {
+    let bus = BusMockBuilder::new()
+        // Register B
+        .expect_command(0b0000_0000, 0b0000_0110, 0x9A, 0x94)
+        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        // Register D
+        .expect_command(0b0000_0000, 0b0000_1010, 0xC3, 0x4)
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        // Register F
+        .expect_command(0b0000_0000, 0b0000_1011, 0x48, 0x36)
+        .expect_register_read(&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(3));
+
+    let result = monitor.read_voltages(CellSelection::Group4).unwrap();
+    assert_eq!(3, result[0].len());
+
+    assert_eq!(Channel::Cell4, result[0][0].channel);
+    assert_eq!(26333, result[0][0].voltage);
+
+    assert_eq!(Channel::Cell10, result[0][1].channel);
+    assert_eq!(24970, result[0][1].voltage);
+
+    assert_eq!(Channel::Cell16, result[0][2].channel);
+    assert_eq!(25344, result[0][2].voltage);
+}
+
+#[test]
+fn test_read_voltages_cell_group_5() {
+    let bus = BusMockBuilder::new()
+        // Register B
+        .expect_command(0b0000_0000, 0b0000_0110, 0x9A, 0x94)
+        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        // Register D
+        .expect_command(0b0000_0000, 0b0000_1010, 0xC3, 0x4)
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        // Register F
+        .expect_command(0b0000_0000, 0b0000_1011, 0x48, 0x36)
+        .expect_register_read(&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(3));
+
+    let result = monitor.read_voltages(CellSelection::Group5).unwrap();
+    assert_eq!(3, result[0].len());
+
+    assert_eq!(Channel::Cell5, result[0][0].channel);
+    assert_eq!(7538, result[0][0].voltage);
+
+    assert_eq!(Channel::Cell11, result[0][1].channel);
+    assert_eq!(8033, result[0][1].voltage);
+
+    assert_eq!(Channel::Cell17, result[0][2].channel);
+    assert_eq!(7983, result[0][2].voltage);
+}
+
+#[test]
+fn test_read_voltages_cell_group_6() {
+    let bus = BusMockBuilder::new()
+        // Register B
+        .expect_command(0b0000_0000, 0b0000_0110, 0x9A, 0x94)
+        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        // Register D
+        .expect_command(0b0000_0000, 0b0000_1010, 0xC3, 0x4)
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        // Register F
+        .expect_command(0b0000_0000, 0b0000_1011, 0x48, 0x36)
+        .expect_register_read(&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(3));
+
+    let result = monitor.read_voltages(CellSelection::Group6).unwrap();
+    assert_eq!(3, result[0].len());
+
+    assert_eq!(Channel::Cell6, result[0][0].channel);
+    assert_eq!(7330, result[0][0].voltage);
+
+    assert_eq!(Channel::Cell12, result[0][1].channel);
+    assert_eq!(8655, result[0][1].voltage);
+
+    assert_eq!(Channel::Cell18, result[0][2].channel);
+    assert_eq!(8075, result[0][2].voltage);
+}
+
+#[test]
+fn test_read_voltages_cell_all() {
+    let bus = BusMockBuilder::new()
+        // Register A
+        .expect_command(0b0000_0000, 0b0000_0100, 0x07, 0xC2)
+        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        // Register C
+        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
+        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        // Register E
+        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
+        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        // Register B
+        .expect_command(0b0000_0000, 0b0000_0110, 0x9A, 0x94)
+        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        // Register D
+        .expect_command(0b0000_0000, 0b0000_1010, 0xC3, 0x4)
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        // Register F
+        .expect_command(0b0000_0000, 0b0000_1011, 0x48, 0x36)
+        .expect_register_read(&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(6));
+
+    let mut result = monitor.read_voltages(CellSelection::All).unwrap();
+    assert_eq!(18, result[0].len());
+    result[0].sort_by_key(|element| element.channel);
+
+    assert_eq!(Channel::Cell1, result[0][0].channel);
+    assert_eq!(24979, result[0][0].voltage);
+
+    assert_eq!(Channel::Cell7, result[0][6].channel);
+    assert_eq!(25441, result[0][6].voltage);
+
+    assert_eq!(Channel::Cell13, result[0][12].channel);
+    assert_eq!(25822, result[0][12].voltage);
+
+    assert_eq!(Channel::Cell2, result[0][1].channel);
+    assert_eq!(7867, result[0][1].voltage);
+
+    assert_eq!(Channel::Cell8, result[0][7].channel);
+    assert_eq!(7869, result[0][7].voltage);
+
+    assert_eq!(Channel::Cell14, result[0][13].channel);
+    assert_eq!(8591, result[0][13].voltage);
+
+    assert_eq!(Channel::Cell3, result[0][2].channel);
+    assert_eq!(8878, result[0][2].voltage);
+
+    assert_eq!(Channel::Cell9, result[0][8].channel);
+    assert_eq!(8932, result[0][8].voltage);
+
+    assert_eq!(Channel::Cell15, result[0][14].channel);
+    assert_eq!(8586, result[0][14].voltage);
+
+    assert_eq!(Channel::Cell4, result[0][3].channel);
+    assert_eq!(26333, result[0][3].voltage);
+
+    assert_eq!(Channel::Cell10, result[0][9].channel);
+    assert_eq!(24970, result[0][9].voltage);
+
+    assert_eq!(Channel::Cell16, result[0][15].channel);
+    assert_eq!(25344, result[0][15].voltage);
+
+    assert_eq!(Channel::Cell5, result[0][4].channel);
+    assert_eq!(7538, result[0][4].voltage);
+
+    assert_eq!(Channel::Cell11, result[0][10].channel);
+    assert_eq!(8033, result[0][10].voltage);
+
+    assert_eq!(Channel::Cell17, result[0][16].channel);
+    assert_eq!(7983, result[0][16].voltage);
+
+    assert_eq!(Channel::Cell6, result[0][5].channel);
+    assert_eq!(7330, result[0][5].voltage);
+
+    assert_eq!(Channel::Cell12, result[0][11].channel);
+    assert_eq!(8655, result[0][11].voltage);
+
+    assert_eq!(Channel::Cell18, result[0][17].channel);
+    assert_eq!(8075, result[0][17].voltage);
+}
+
+#[test]
+fn test_read_voltages_cell_multiple_devices() {
+    let bus = BusMockBuilder::new()
+        // Register A
+        .expect_command(0b0000_0000, 0b0000_0100, 0x07, 0xC2)
+        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        // Register C
+        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
+        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        // Register E
+        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
+        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .expect_register_read(&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 2> = LTC681X::ltc6813(bus, get_cs_no_polling(3));
+
+    let result = monitor.read_voltages(CellSelection::Group1).unwrap();
+    assert_eq!(3, result[0].len());
+    assert_eq!(3, result[1].len());
+
+    assert_eq!(Channel::Cell1, result[0][0].channel);
+    assert_eq!(Channel::Cell1, result[1][0].channel);
+    assert_eq!(24979, result[0][0].voltage);
+    assert_eq!(26333, result[1][0].voltage);
+
+    assert_eq!(Channel::Cell7, result[0][1].channel);
+    assert_eq!(Channel::Cell7, result[1][1].channel);
+    assert_eq!(25441, result[0][1].voltage);
+    assert_eq!(24970, result[1][1].voltage);
+
+    assert_eq!(Channel::Cell13, result[0][2].channel);
+    assert_eq!(Channel::Cell13, result[1][2].channel);
+    assert_eq!(25822, result[0][2].voltage);
+    assert_eq!(25344, result[1][2].voltage);
+}
+
+#[test]
+fn test_read_voltages_gpio_group_1() {
+    let bus = BusMockBuilder::new()
+        // Register A
+        .expect_command(0b0000_0000, 0b0000_1100, 0xEF, 0xCC)
+        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        // Register C
+        .expect_command(0b0000_0000, 0b0000_1101, 0x64, 0xFE)
+        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(2));
+
+    let result = monitor.read_voltages(GPIOSelection::Group1).unwrap();
+    assert_eq!(2, result[0].len());
+
+    assert_eq!(Channel::GPIO1, result[0][0].channel);
+    assert_eq!(24979, result[0][0].voltage);
+
+    assert_eq!(Channel::GPIO6, result[0][1].channel);
+    assert_eq!(25441, result[0][1].voltage);
+}
+
+#[test]
+fn test_read_voltages_gpio_group_2() {
+    let bus = BusMockBuilder::new()
+        // Register A
+        .expect_command(0b0000_0000, 0b0000_1100, 0xEF, 0xCC)
+        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        // Register C
+        .expect_command(0b0000_0000, 0b0000_1101, 0x64, 0xFE)
+        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(2));
+
+    let result = monitor.read_voltages(GPIOSelection::Group2).unwrap();
+    assert_eq!(2, result[0].len());
+
+    assert_eq!(Channel::GPIO2, result[0][0].channel);
+    assert_eq!(7867, result[0][0].voltage);
+
+    assert_eq!(Channel::GPIO7, result[0][1].channel);
+    assert_eq!(7869, result[0][1].voltage);
+}
+
+#[test]
+fn test_read_voltages_gpio_group_3() {
+    let bus = BusMockBuilder::new()
+        // Register A
+        .expect_command(0b0000_0000, 0b0000_1100, 0xEF, 0xCC)
+        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        // Register C
+        .expect_command(0b0000_0000, 0b0000_1101, 0x64, 0xFE)
+        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(2));
+
+    let result = monitor.read_voltages(GPIOSelection::Group3).unwrap();
+    assert_eq!(2, result[0].len());
+
+    assert_eq!(Channel::GPIO3, result[0][0].channel);
+    assert_eq!(8878, result[0][0].voltage);
+
+    assert_eq!(Channel::GPIO8, result[0][1].channel);
+    assert_eq!(8932, result[0][1].voltage);
+}
+
+#[test]
+fn test_read_voltages_gpio_group_4() {
+    let bus = BusMockBuilder::new()
+        // Register D
+        .expect_command(0b0000_0000, 0b0000_1110, 0x72, 0x9A)
+        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        // Register B
+        .expect_command(0b0000_0000, 0b0000_1111, 0xF9, 0xA8)
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(2));
+
+    let result = monitor.read_voltages(GPIOSelection::Group4).unwrap();
+    assert_eq!(2, result[0].len());
+
+    assert_eq!(Channel::GPIO4, result[0][0].channel);
+    assert_eq!(26333, result[0][0].voltage);
+
+    assert_eq!(Channel::GPIO9, result[0][1].channel);
+    assert_eq!(24970, result[0][1].voltage);
+}
+
+#[test]
+fn test_read_voltages_gpio_group_5() {
+    let bus = BusMockBuilder::new()
+        // Register B
+        .expect_command(0b0000_0000, 0b0000_1110, 0x72, 0x9A)
+        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_voltages(GPIOSelection::Group5).unwrap();
+    assert_eq!(1, result[0].len());
+
+    assert_eq!(Channel::GPIO5, result[0][0].channel);
+    assert_eq!(7538, result[0][0].voltage);
+}
+
+#[test]
+fn test_read_voltages_gpio_group_6() {
+    let bus = BusMockBuilder::new()
+        // Register B
+        .expect_command(0b0000_0000, 0b0000_1110, 0x72, 0x9A)
+        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_voltages(GPIOSelection::Group6).unwrap();
+    assert_eq!(1, result[0].len());
+
+    assert_eq!(Channel::SecondReference, result[0][0].channel);
+    assert_eq!(7330, result[0][0].voltage);
+}
+
+#[test]
+fn test_read_voltages_gpio_all() {
+    let bus = BusMockBuilder::new()
+        // Register A
+        .expect_command(0b0000_0000, 0b0000_1100, 0xEF, 0xCC)
+        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        // Register C
+        .expect_command(0b0000_0000, 0b0000_1101, 0x64, 0xFE)
+        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        // Register D
+        .expect_command(0b0000_0000, 0b0000_1110, 0x72, 0x9A)
+        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        // Register B
+        .expect_command(0b0000_0000, 0b0000_1111, 0xF9, 0xA8)
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(4));
+
+    let mut result = monitor.read_voltages(GPIOSelection::All).unwrap();
+    assert_eq!(10, result[0].len());
+    result[0].sort_by_key(|element| element.channel);
+
+    assert_eq!(Channel::GPIO1, result[0][0].channel);
+    assert_eq!(24979, result[0][0].voltage);
+
+    assert_eq!(Channel::GPIO6, result[0][5].channel);
+    assert_eq!(25441, result[0][5].voltage);
+
+    assert_eq!(Channel::GPIO2, result[0][1].channel);
+    assert_eq!(7867, result[0][1].voltage);
+
+    assert_eq!(Channel::GPIO7, result[0][6].channel);
+    assert_eq!(7869, result[0][6].voltage);
+
+    assert_eq!(Channel::GPIO3, result[0][2].channel);
+    assert_eq!(8878, result[0][2].voltage);
+
+    assert_eq!(Channel::GPIO8, result[0][7].channel);
+    assert_eq!(8932, result[0][7].voltage);
+
+    assert_eq!(Channel::GPIO4, result[0][3].channel);
+    assert_eq!(26333, result[0][3].voltage);
+
+    assert_eq!(Channel::GPIO9, result[0][8].channel);
+    assert_eq!(24970, result[0][8].voltage);
+
+    assert_eq!(Channel::GPIO5, result[0][4].channel);
+    assert_eq!(7538, result[0][4].voltage);
+
+    assert_eq!(Channel::SecondReference, result[0][9].channel);
+    assert_eq!(7330, result[0][9].voltage);
+}
+
+#[test]
+fn test_read_voltages_cell_cs_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Err(PinError::Error1));
+
+    let bus = MockSPIBus::new();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.read_voltages(CellSelection::Group1);
+    match result.unwrap_err() {
+        Error::CSPinError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_read_voltages_cell_transfer_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let mut bus = MockSPIBus::new();
+    bus.expect_transfer().times(1).returning(move |_| Err(BusError::Error1));
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.read_voltages(CellSelection::Group1);
+    match result.unwrap_err() {
+        Error::TransferError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
 }
 
 /// Creates a pin mock for no polling method

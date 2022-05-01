@@ -1,6 +1,8 @@
 #![cfg_attr(not(test), no_std)]
 #![cfg_attr(feature = "strict", deny(warnings))]
 
+extern crate alloc;
+
 pub mod ltc6810;
 pub mod ltc6811;
 pub mod ltc6812;

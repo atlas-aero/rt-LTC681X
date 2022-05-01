@@ -2,8 +2,10 @@ use crate::monitor::Error::TransferError;
 use crate::pec15::PEC15;
 use core::fmt::{Debug, Formatter};
 use core::marker::PhantomData;
+use core::slice::Iter;
 use embedded_hal::blocking::spi::Transfer;
 use embedded_hal::digital::v2::OutputPin;
+use heapless::Vec;
 
 /// Poll Strategy
 pub trait PollMethod<CS: OutputPin> {
@@ -42,6 +44,46 @@ pub enum ADCMode {
     Other = 0x0,
 }
 
+/// Location of a conversion voltage
+pub struct RegisterAddress<T: DeviceTypes> {
+    /// Either a cell or GPIO
+    pub(crate) channel: T::Channel,
+
+    /// Register which stores the voltage of the channel
+    pub(crate) register: T::Register,
+
+    /// Index within register. Each register has three slots
+    pub(crate) slot: usize,
+}
+
+/// Maps register locations to cell or GPIO groups
+pub trait RegisterLocator<T: DeviceTypes> {
+    /// Returns the register locations of the given cell or GPIO group
+    fn get_locations(&self) -> Iter<RegisterAddress<T>>;
+}
+
+/// Conversion result of a single channel
+#[derive(PartialEq, Debug)]
+pub struct Voltage<T: DeviceTypes> {
+    /// Channel of the voltage
+    pub channel: T::Channel,
+
+    /// Raw register value
+    /// Real voltage: voltage * 100 uV
+    pub voltage: u16,
+}
+
+impl<T: DeviceTypes> Copy for Voltage<T> {}
+
+impl<T: DeviceTypes> Clone for Voltage<T> {
+    fn clone(&self) -> Self {
+        Self {
+            channel: self.channel,
+            voltage: self.voltage,
+        }
+    }
+}
+
 /// Error enum of LTC681X
 #[derive(PartialEq)]
 pub enum Error<B: Transfer<u8>, CS: OutputPin> {
@@ -67,6 +109,28 @@ pub trait ToFullCommand {
     fn to_command(&self) -> [u8; 4];
 }
 
+/// Converts channels (cells or GPIOs) to indexes
+pub trait ChannelIndex {
+    /// Returns the cell index if a cell channel, otherwise None.
+    fn to_cell_index(&self) -> Option<usize>;
+
+    /// Returns the GPIO index if a GPIO channel, otherwise None.
+    fn to_gpio_index(&self) -> Option<usize>;
+}
+
+/// Converts registers to indexes
+pub trait GroupedRegisterIndex {
+    /// Returns a **unique** index within the register group (e.g. auxiliary registers)
+    fn to_index(&self) -> usize;
+}
+
+/// ADC channel type
+pub enum ChannelType {
+    Cell,
+    GPIO,
+    Reference,
+}
+
 /// Device specific types
 pub trait DeviceTypes {
     /// Argument for the identification of cell groups, which depends on the exact device type.
@@ -75,8 +139,17 @@ pub trait DeviceTypes {
     /// Argument for the identification of GPIO groups, which depends on the exact device type.
     type GPIOSelection: ToCommandBitmap + Copy + Clone;
 
-    /// Argument for cell voltage register selection. The available registers depend on the device.
-    type Register: ToFullCommand + Copy + Clone;
+    /// Argument for register selection. The available registers depend on the device.
+    type Register: ToFullCommand + GroupedRegisterIndex + Copy + Clone;
+
+    /// Available cells and GPIOs
+    type Channel: ChannelIndex + Into<ChannelType> + Copy + Clone;
+
+    /// Number of battery cells supported by the device
+    const CELL_COUNT: usize;
+
+    /// Number of GPIO channels
+    const GPIO_COUNT: usize;
 }
 
 /// Public LTC681X client interface
@@ -105,6 +178,12 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     /// Reads the values of the given register
     /// Returns one array for each device in daisy chain
     fn read_register(&mut self, register: T::Register) -> Result<[[u16; 3]; L], Self::Error>;
+
+    /// Reads and returns the conversion result (voltages) of Cell or GPIO group
+    /// Returns one vector for each device in daisy chain
+    ///
+    /// Vector needs to have a fixed capacity until feature [generic_const_exprs](<https://github.com/rust-lang/rust/issues/76560) is stable
+    fn read_voltages<R: RegisterLocator<T>>(&mut self, locator: R) -> Result<Vec<Vec<Voltage<T>, 18>, L>, Self::Error>;
 }
 
 /// Public LTC681X interface for polling ADC status
@@ -188,9 +267,47 @@ where
         self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
     }
 
-    /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_cell_voltages)
+    /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_register)
     fn read_register(&mut self, register: T::Register) -> Result<[[u16; 3]; L], Error<B, CS>> {
         self.read_daisy_chain(register.to_command())
+    }
+
+    /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_voltages)
+    fn read_voltages<R: RegisterLocator<T>>(&mut self, locator: R) -> Result<Vec<Vec<Voltage<T>, 18>, L>, Self::Error> {
+        let mut result: Vec<Vec<Voltage<T>, 18>, L> = Vec::new();
+
+        // One slot for each register
+        // 1. index: register index
+        // 2. index: device index
+        // 3. index: Slot within register
+        let mut register_data = [[[0u16; 3]; L]; 6];
+
+        // Array for flagging loaded registers, 0 = not loaded, 1 = loaded
+        let mut loaded_registers = [0; 6];
+
+        // Map register data
+        for device_index in 0..L {
+            let _ = result.push(Vec::new());
+
+            for address in locator.get_locations() {
+                let register_index = address.register.to_index();
+
+                // Load register if not done yet
+                if loaded_registers[register_index] == 0 {
+                    register_data[register_index] = self.read_register(address.register)?;
+                    loaded_registers[register_index] = 1;
+                }
+
+                let voltage = Voltage {
+                    channel: address.channel,
+                    voltage: register_data[register_index][device_index][address.slot],
+                };
+
+                let _ = result[device_index].push(voltage);
+            }
+        }
+
+        Ok(result)
     }
 }
 
