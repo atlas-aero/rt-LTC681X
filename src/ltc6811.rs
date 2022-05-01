@@ -35,7 +35,7 @@ pub enum CellSelection {
 ///
 /// See page 61 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/LTC6811-1-6811-2.pdf>)
 /// for conversion times
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum GPIOSelection {
     /// GPIO 1-5 and 2nd Reference
     All = 0x0,
@@ -48,7 +48,7 @@ pub enum GPIOSelection {
 }
 
 /// Available registers
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Register {
     CellVoltageA,
     CellVoltageB,

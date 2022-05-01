@@ -11,7 +11,7 @@ use embedded_hal::digital::v2::OutputPin;
 ///
 /// See page 63 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/LTC6810-1-6810-2.pdf>)
 /// for conversion times
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum CellSelection {
     /// All cells
     All = 0x0,
@@ -27,7 +27,7 @@ pub enum CellSelection {
 ///
 /// See page 63 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/LTC6810-1-6810-2.pdf>)
 /// for conversion times
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum GPIOSelection {
     /// S0, GPIO 1-4 and 2nd Reference
     All = 0x0,

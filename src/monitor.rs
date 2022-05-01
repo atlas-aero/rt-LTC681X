@@ -32,7 +32,7 @@ impl<CS: OutputPin> PollMethod<CS> for NoPolling {
 }
 
 /// ADC frequency and filtering settings
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum ADCMode {
     /// 27kHz or 14kHz in case of CFGAR0=1 configuration
     Fast = 0x1,
