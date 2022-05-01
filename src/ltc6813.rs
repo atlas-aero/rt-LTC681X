@@ -262,7 +262,7 @@ const CELL_REGISTER_LOCATIONS: [RegisterAddress<LTC6813>; 18] = [
 ];
 
 impl RegisterLocator<LTC6813> for CellSelection {
-    fn get_locations(&self) -> Iter<RegisterAddress<LTC6813>> {
+    fn get_locations(&self) -> Iter<'static, RegisterAddress<LTC6813>> {
         match self {
             CellSelection::All => CELL_REGISTER_LOCATIONS.iter(),
             CellSelection::Group1 => CELL_REGISTER_LOCATIONS[0..3].iter(),
@@ -289,7 +289,7 @@ const GPIO_REGISTER_LOCATIONS: [RegisterAddress<LTC6813>; 10] = [
 ];
 
 impl RegisterLocator<LTC6813> for GPIOSelection {
-    fn get_locations(&self) -> Iter<RegisterAddress<LTC6813>> {
+    fn get_locations(&self) -> Iter<'static, RegisterAddress<LTC6813>> {
         match self {
             GPIOSelection::All => GPIO_REGISTER_LOCATIONS.iter(),
             GPIOSelection::Group1 => GPIO_REGISTER_LOCATIONS[0..2].iter(),

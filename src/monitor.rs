@@ -57,9 +57,9 @@ pub struct RegisterAddress<T: DeviceTypes> {
 }
 
 /// Maps register locations to cell or GPIO groups
-pub trait RegisterLocator<T: DeviceTypes> {
+pub trait RegisterLocator<T: DeviceTypes + 'static> {
     /// Returns the register locations of the given cell or GPIO group
-    fn get_locations(&self) -> Iter<RegisterAddress<T>>;
+    fn get_locations(&self) -> Iter<'static, RegisterAddress<T>>;
 }
 
 /// Conversion result of a single channel
@@ -183,7 +183,12 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     /// Returns one vector for each device in daisy chain
     ///
     /// Vector needs to have a fixed capacity until feature [generic_const_exprs](<https://github.com/rust-lang/rust/issues/76560) is stable
-    fn read_voltages<R: RegisterLocator<T>>(&mut self, locator: R) -> Result<Vec<Vec<Voltage<T>, 18>, L>, Self::Error>;
+    fn read_voltages<R: RegisterLocator<T> + 'static>(
+        &mut self,
+        locator: R,
+    ) -> Result<Vec<Vec<Voltage<T>, 18>, L>, Self::Error>
+    where
+        T: 'static;
 }
 
 /// Public LTC681X interface for polling ADC status
@@ -273,7 +278,13 @@ where
     }
 
     /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_voltages)
-    fn read_voltages<R: RegisterLocator<T>>(&mut self, locator: R) -> Result<Vec<Vec<Voltage<T>, 18>, L>, Self::Error> {
+    fn read_voltages<R: RegisterLocator<T> + 'static>(
+        &mut self,
+        locator: R,
+    ) -> Result<Vec<Vec<Voltage<T>, 18>, L>, Self::Error>
+    where
+        T: 'static,
+    {
         let mut result: Vec<Vec<Voltage<T>, 18>, L> = Vec::new();
 
         // One slot for each register
