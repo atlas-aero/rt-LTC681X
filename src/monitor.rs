@@ -132,12 +132,12 @@ pub enum ChannelType {
 }
 
 /// Device specific types
-pub trait DeviceTypes: Send + Sync + 'static {
+pub trait DeviceTypes: Send + Sync + Sized + 'static {
     /// Argument for the identification of cell groups, which depends on the exact device type.
-    type CellSelection: ToCommandBitmap + Copy + Clone + Send + Sync;
+    type CellSelection: ToCommandBitmap + RegisterLocator<Self> + Copy + Clone + Send + Sync;
 
     /// Argument for the identification of GPIO groups, which depends on the exact device type.
-    type GPIOSelection: ToCommandBitmap + Copy + Clone + Send + Sync;
+    type GPIOSelection: ToCommandBitmap + RegisterLocator<Self> + Copy + Clone + Send + Sync;
 
     /// Argument for register selection. The available registers depend on the device.
     type Register: ToFullCommand + GroupedRegisterIndex + Copy + Clone + Send + Sync;
