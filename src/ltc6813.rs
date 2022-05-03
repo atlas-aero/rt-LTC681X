@@ -1,3 +1,4 @@
+//! Device-specific types for [LTC6813](<https://www.analog.com/en/products/ltc6813-1.html>)
 use crate::commands::*;
 use crate::monitor::{
     ChannelIndex, ChannelType, DeviceTypes, GroupedRegisterIndex, NoPolling, RegisterAddress, RegisterLocator,

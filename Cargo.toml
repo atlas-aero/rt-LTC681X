@@ -1,6 +1,6 @@
 [package]
 name = "ltc681x"
-description = "Abstraciton for LTC681X battery monitoring family"
+description = "Client LTC681X battery monitoring family"
 keywords = ["LTC681X", "BMS", "no_std", "battery", "ic"]
 categories  = ["embedded", "hardware-support", "no-std"]
 authors = ["PEGASUS GmbH <info@pegasus-aero.de>"]
@@ -17,3 +17,8 @@ heapless = "0.7.10"
 
 [dev-dependencies]
 mockall = "0.11.0"
+
+[features]
+default = ["example"]
+# Mocks for doc examples
+example = []

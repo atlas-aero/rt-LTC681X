@@ -1,12 +1,52 @@
-# Abstraction for LTC681X battery stack monitors
+# Client for LTC681X battery stack monitors
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Crates.io](https://img.shields.io/crates/v/ltc681x.svg)](https://crates.io/crates/ltc681x)
+[![Actions Status](https://github.com/pegasus-aero/rt-LTC681X/workflows/QA/badge.svg)](http://github.com/pegasus-aero/rt-LTC681X/actions)
 
-Abstraction for LTC681X family like [ltc6813](https://www.analog.com/media/en/technical-documentation/data-sheets/ltc6813-1.pdf).
+Abstraction for LTC681X family. Supports all devices of LTC681X family: [LTC6813](https://www.analog.com/en/products/ltc6813-1.html), [LTC6812](https://www.analog.com/en/products/ltc6812-1.html), [LTC6811](https://www.analog.com/en/products/ltc6811-1.html) and [LTC6810](https://www.analog.com/en/products/ltc6810-1.html).
 
-> :warning: The crate is still very incomplete, but is under active development.
+Currently, the following features are implemented:
+ * [Cell and GPIO conversion](https://docs.rs/ltc681x/latest/ltc681x/monitor/index.html#conversion)
+ * [Reading cell and GPIO voltage registers](https://docs.rs/ltc681x/latest/ltc681x/monitor/index.html#reading-registers)
+ * [Multiple devices in daisy chain](https://docs.rs/ltc681x/latest/ltc681x/monitor/index.html#multiple-devices-in-daisy-chain)
+ * [ADC status polling (SDO line method)](https://docs.rs/ltc681x/latest/ltc681x/monitor/index.html#polling)
+ * [Mapping voltages to GPIO and cell groups](https://docs.rs/ltc681x/latest/ltc681x/monitor/index.html#mapping-voltages)
 
-> :warning: The crate has only been tested for the ltc6813 variant. Although the protocol of the LTC681X family is essentially the same, inconsistencies are still conceivable for some variants. Practical tests + feedback with other variants are therefore welcome.
+## Example
+For all details see [monitor](https://docs.rs/ltc681x/latest/ltc681x/monitor/index.html) module.
+
+ ````Rust
+use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+use ltc681x::ltc6813::{CellSelection, Channel, GPIOSelection, LTC6813};
+use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient, PollClient};
+
+let spi_bus = ExampleSPIBus::default();
+let cs_pin = ExampleCSPin{};
+
+ // LTC6813 device
+ let mut client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus, cs_pin)
+     .enable_sdo_polling();
+
+ // Starts conversion for cell group 1
+ client.start_conv_cells(ADCMode::Normal, CellSelection::Group1, true);
+
+ // Poll ADC status
+ while !client.adc_ready().unwrap() {
+     // Conversion is not done yet
+ }
+
+ // Returns the value of cell group A. In case of LTC613: cell 1, 7 and 13
+ let voltages = client.read_voltages(CellSelection::Group1).unwrap();
+ assert_eq!(Channel::Cell1, voltages[0][0].channel);
+ assert_eq!(24979, voltages[0][0].voltage);
+ ````
+
+## State
+
+> :warning: The crate is still incomplete, but is under active development.
+
+> :warning: The crate has only been tested for the LTC6813 variant. Although the protocol of the LTC681X family is essentially the same, inconsistencies are still conceivable for some variants. Practical tests + feedback with other variants are therefore welcome.
 
 ## Development
 

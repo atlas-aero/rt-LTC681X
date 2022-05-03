@@ -1,3 +1,4 @@
+//! Device-specific types for [LTC6810](<https://www.analog.com/en/products/ltc6810-1.html>)
 use crate::commands::{CMD_AUX_V_REG_A, CMD_AUX_V_REG_B, CMD_CELL_V_REG_A, CMD_CELL_V_REG_B};
 use crate::monitor::{
     ChannelIndex, ChannelType, DeviceTypes, GroupedRegisterIndex, NoPolling, RegisterAddress, RegisterLocator,

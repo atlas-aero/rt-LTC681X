@@ -1,3 +1,191 @@
+//! Generic client for LTX681X device family
+//!
+//! This module contains a generic client which supports communication with any LTC681X device.
+//!
+//! # Initialization
+//!
+//! The [client](LTC681X) is based on a SPI bus, which implements the [embedded-hal SPI Transfer trait](<https://docs.rs/embedded-hal/latest/embedded_hal/blocking/spi/trait.Transfer.html>)
+//! and contains the following two generic parameters:
+//! * T: Device specific types ([DeviceTypes] trait). See [LTC6813](crate::ltc6813::LTC6813), [LTC6812](crate::ltc6812::LTC6812), [LTC6811](crate::ltc6811::LTC6811) and [LTC6810](crate::ltc6810::LTC6810)
+//! * L: Number of devices in daisy chain
+//!
+//! ````
+//! use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//! use ltc681x::ltc6812::LTC6812;
+//! use ltc681x::ltc6813::LTC6813;
+//! use ltc681x::monitor::LTC681X;
+//!
+//! // Single LTC6813 device
+//! let spi_bus = ExampleSPIBus::default();
+//! let cs_pin = ExampleCSPin{};
+//! let client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus, cs_pin);
+//!
+//! // Three LTC6812 devices in daisy chain
+//! let spi_bus = ExampleSPIBus::default();
+//! let cs_pin = ExampleCSPin{};
+//! let client: LTC681X<_, _, _, LTC6812, 3> = LTC681X::ltc6812(spi_bus, cs_pin);
+//! ````
+//!
+//! # Conversion
+//!
+//! The following section describes starting conversion and polling mechanisms.
+//!
+//! ## Cell conversion
+//!
+//! A cell conversion is started using the [LTC681XClient::start_conv_cells](LTC681XClient#tymethod.start_conv_cells) method.
+//! The method takes three arguments:
+//! * **mode**: ADC frequency and filter settings, s. [ADCMode]
+//! * **cells**: Group of cells to be converted, e.g. [LTC6813::CellSelection](crate::ltc6813::CellSelection)
+//! * **dcp**: Allow discharging during conversion?
+//!
+//! ````
+//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::ltc6813::{CellSelection, LTC6813};
+//!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient};
+//!#
+//!# let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIBus::default(), ExampleCSPin{});
+//!#
+//!#
+//! // Converting first cell group using normal ADC mode
+//! client.start_conv_cells(ADCMode::Normal, CellSelection::Group1, true);
+//!
+//! // Converting all cells using fast ADC mode
+//! client.start_conv_cells(ADCMode::Fast, CellSelection::All, true);
+//! ````
+//!
+//! ## GPIO conversion
+//!
+//! A GPIO conversion is started using the [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.start_conv_gpio) method.
+//! The method takes three arguments:
+//! * **mode**: ADC frequency and filter settings, s. [ADCMode]
+//! * **pins**: Group of GPIO channels to be converted, e.g. [LTC6813::GPIOSelection](crate::ltc6813::GPIOSelection)
+//!
+//! ````
+//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::ltc6813::{GPIOSelection, LTC6813};
+//!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient};
+//!#
+//!# let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIBus::default(), ExampleCSPin{});
+//!#
+//! // Converting second GPIO group using normal ADC mode
+//! client.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group2);
+//!
+//! // Converting all GPIOs using fast ADC mode
+//! client.start_conv_gpio(ADCMode::Fast, GPIOSelection::All);
+//! ````
+//!
+//! ## Polling
+//!
+//! ADC status may be be polled using the [PollClient::adc_ready](PollClient#tymethod.adc_ready) method.
+//! The following poll methods are currently supported:
+//!
+//! ### SDO line polling
+//!
+//! After entering a conversion command, the SDO line is driven low when the device is busy performing
+//! conversions. SDO is pulled high when the device completes conversions.
+//!
+//! ````
+//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::ltc6813::{GPIOSelection, LTC6813};
+//!# use ltc681x::monitor::{ADCMode, LTC681X, PollClient};
+//!#
+//!# let spi_bus = ExampleSPIBus::default();
+//!# let cs_pin = ExampleCSPin{};
+//! let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus, cs_pin)
+//!     .enable_sdo_polling();
+//!
+//! while !client.adc_ready().unwrap() {
+//!     // ADC conversion is not finished yet
+//! }
+//! ````
+//!
+//! ## Reading registers
+//!
+//! The content of registers may be directly read. The client returns an array containing three u16,
+//! one value for each register slot.
+//!
+//! ````
+//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::ltc6813::{GPIOSelection, LTC6813, Register};
+//!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient, PollClient};
+//!#
+//!# let spi_bus = ExampleSPIBus::default();
+//!# let cs_pin = ExampleCSPin{};
+//! // Single LTC613 device
+//! let mut client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus, cs_pin);
+//!
+//! // Reading cell voltage register B (CVBR)
+//! let cell_voltages = client.read_register(Register::CellVoltageB).unwrap();
+//! // Voltage of cell 5 (CVBR2/CVBR3)
+//! assert_eq!(7538, cell_voltages[0][1]);
+//!
+//! // Reading auxiliary voltage register A (AVAR)
+//! let aux_voltages = client.read_register(Register::AuxiliaryA).unwrap();
+//! // Voltage of GPIO1 (AVAR0/AVAR1)
+//! assert_eq!(24979, aux_voltages[0][0]);
+//! ````
+//!
+//! ### Multiple devices in daisy chain
+//!
+//! The `read_register()` method returns one array for each device in daisy chain. So the first array index addresses the device index.
+//! The second index addresses the slot within the register (0, 1, 2).
+//!
+//! ````
+//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::ltc6813::{GPIOSelection, LTC6813, Register};
+//!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient, PollClient};
+//!#
+//!# let spi_bus = ExampleSPIBus::default();
+//!# let cs_pin = ExampleCSPin{};
+//! // Three LTC613 devices in daisy chain
+//! let mut client: LTC681X<_, _, _, LTC6813, 3> = LTC681X::ltc6813(spi_bus, cs_pin);
+//!
+//! // Reading cell voltage register A (CVAR)
+//! let cell_voltages = client.read_register(Register::CellVoltageA).unwrap();
+//! // Voltage of cell 1 of third device
+//! assert_eq!(24979, cell_voltages[2][0]);
+//!
+//! // Voltage of cell 3 of second device
+//! assert_eq!(8878, cell_voltages[1][2]);
+//! ````
+//!
+//! # Mapping voltages
+//!
+//! Instead of manually reading voltage registers, the client offers a convenient method for mapping
+//! voltages to cell or GPIO groups.
+//!
+//! ````
+//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::ltc6813::{CellSelection, Channel, GPIOSelection, LTC6813, Register};
+//!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient, PollClient};
+//!#
+//!# let spi_bus = ExampleSPIBus::default();
+//!# let cs_pin = ExampleCSPin{};
+//!#
+//! // LTC6813 device
+//! let mut client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus, cs_pin);
+//!
+//! // Returns the value of cell group A. In case of LTC613: cell 1, 7 and 13
+//! let voltages = client.read_voltages(CellSelection::Group1).unwrap();
+//!
+//! assert_eq!(Channel::Cell1, voltages[0][0].channel);
+//! assert_eq!(24979, voltages[0][0].voltage);
+//!
+//! assert_eq!(Channel::Cell7, voltages[0][1].channel);
+//! assert_eq!(25441, voltages[0][1].voltage);
+//!
+//! assert_eq!(Channel::Cell13, voltages[0][2].channel);
+//! assert_eq!(25822, voltages[0][2].voltage);
+//!
+//! // Returns the value of GPIO group 2. In case of LTC613: GPIO2 and GPIO7
+//! let voltages = client.read_voltages(GPIOSelection::Group2).unwrap();
+//!
+//! assert_eq!(Channel::GPIO2, voltages[0][0].channel);
+//! assert_eq!(7867, voltages[0][0].voltage);
+//!
+//! assert_eq!(Channel::GPIO7, voltages[0][1].channel);
+//! assert_eq!(7869, voltages[0][1].voltage);
+//! ````
 use crate::monitor::Error::TransferError;
 use crate::pec15::PEC15;
 use core::fmt::{Debug, Formatter};
@@ -173,7 +361,7 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     ///
     /// * `mode`: ADC mode
     /// * `channels`: Measures t:he given GPIO group
-    fn start_conv_gpio(&mut self, mode: ADCMode, cells: T::GPIOSelection) -> Result<(), Self::Error>;
+    fn start_conv_gpio(&mut self, mode: ADCMode, pins: T::GPIOSelection) -> Result<(), Self::Error>;
 
     /// Reads the values of the given register
     /// Returns one array for each device in daisy chain
@@ -182,7 +370,7 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     /// Reads and returns the conversion result (voltages) of Cell or GPIO group
     /// Returns one vector for each device in daisy chain
     ///
-    /// Vector needs to have a fixed capacity until feature [generic_const_exprs](<https://github.com/rust-lang/rust/issues/76560) is stable
+    /// Vector needs to have a fixed capacity until feature [generic_const_exprs](<https://github.com/rust-lang/rust/issues/76560>) is stable
     fn read_voltages<R: RegisterLocator<T> + 'static>(
         &mut self,
         locator: R,
