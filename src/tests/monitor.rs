@@ -182,6 +182,79 @@ fn test_start_conv_gpio_transfer_error() {
 }
 
 #[test]
+fn test_start_overlap_measurement_acc_modes() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0011, 0b0000_0001, 0x2E, 0x88)
+        .expect_command(0b0000_0010, 0b1000_0001, 0xE2, 0xE2)
+        .expect_command(0b0000_0011, 0b1000_0001, 0x6A, 0xAE)
+        .expect_command(0b0000_0010, 0b0000_0001, 0xA6, 0xC4)
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(4));
+    monitor.start_overlap_measurement(ADCMode::Normal, false).unwrap();
+    monitor.start_overlap_measurement(ADCMode::Fast, false).unwrap();
+    monitor.start_overlap_measurement(ADCMode::Filtered, false).unwrap();
+    monitor.start_overlap_measurement(ADCMode::Other, false).unwrap();
+}
+
+#[test]
+fn test_start_overlap_measurement_dcp() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0011, 0b0001_0001, 0x75, 0xA6)
+        .expect_command(0b0000_0011, 0b0000_0001, 0x2E, 0x88)
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(2));
+    monitor.start_overlap_measurement(ADCMode::Normal, true).unwrap();
+    monitor.start_overlap_measurement(ADCMode::Normal, false).unwrap();
+}
+
+#[test]
+fn test_start_overlap_measurement_sdo_polling() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0011, 0b0000_0001, 0x2E, 0x88)
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs).enable_sdo_polling();
+    monitor.start_overlap_measurement(ADCMode::Normal, false).unwrap();
+}
+
+#[test]
+fn test_start_overlap_measurement_cs_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Err(PinError::Error1));
+
+    let bus = MockSPIBus::new();
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.start_overlap_measurement(ADCMode::Normal, false);
+    match result.unwrap_err() {
+        Error::CSPinError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_start_overlap_measurement_transfer_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let mut bus = MockSPIBus::new();
+    bus.expect_transfer().times(1).returning(move |_| Err(BusError::Error1));
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.start_overlap_measurement(ADCMode::Normal, false);
+    match result.unwrap_err() {
+        Error::TransferError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
 fn test_sdo_polling_ready() {
     let mut cs = MockPin::new();
     cs.expect_set_high().times(1).returning(move || Ok(()));

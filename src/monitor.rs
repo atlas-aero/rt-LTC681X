@@ -363,6 +363,15 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     /// * `channels`: Measures t:he given GPIO group
     fn start_conv_gpio(&mut self, mode: ADCMode, pins: T::GPIOSelection) -> Result<(), Self::Error>;
 
+    /// Start the  Overlap Measurements (ADOL command)
+    /// Note: This command is not available on LTC6810, as this device only includes one ADC
+    ///
+    /// # Arguments
+    ///
+    /// * `mode`: ADC mode
+    /// * `dcp`: True if discharge is permitted during conversion
+    fn start_overlap_measurement(&mut self, mode: ADCMode, dcp: bool) -> Result<(), Self::Error>;
+
     /// Reads the values of the given register
     /// Returns one array for each device in daisy chain
     fn read_register(&mut self, register: T::Register) -> Result<[[u16; 3]; L], Self::Error>;
@@ -455,6 +464,21 @@ where
 
         command |= (mode as u16) << 7;
         command |= channels.to_bitmap();
+
+        self.send_command(command).map_err(Error::TransferError)?;
+        self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
+    }
+
+    /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.start_overlap_measurement)
+    fn start_overlap_measurement(&mut self, mode: ADCMode, dcp: bool) -> Result<(), Error<B, CS>> {
+        self.cs.set_low().map_err(Error::CSPinError)?;
+        let mut command: u16 = 0b0000_0010_0000_0001;
+
+        command |= (mode as u16) << 7;
+
+        if dcp {
+            command |= 0b0001_0000;
+        }
 
         self.send_command(command).map_err(Error::TransferError)?;
         self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
