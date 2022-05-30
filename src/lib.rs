@@ -8,6 +8,7 @@
 //! * [Multiple devices in daisy chain](crate::monitor#multiple-devices-in-daisy-chain)
 //! * [ADC status polling (SDO line method)](crate::monitor#polling)
 //! * [Mapping voltages to GPIO and cell groups](crate::monitor#mapping-voltages)
+//! * [Overlapping ADC measurement](crate::monitor#overlap-measurement-adol-command)
 //!
 //! # Example
 //!

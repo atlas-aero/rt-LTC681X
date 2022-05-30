@@ -186,6 +186,35 @@
 //! assert_eq!(Channel::GPIO7, voltages[0][1].channel);
 //! assert_eq!(7869, voltages[0][1].voltage);
 //! ````
+//!
+//! # Tests
+//!
+//! The LTC681X family supports a number of verification and fault-tests.
+//!
+//! ## Overlap measurement (ADOL command)
+//!
+//! Starting the ADC overlapping measurement and reading the results:
+//! ````
+//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::ltc6813::{CellSelection, LTC6813};
+//!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient};
+//!#
+//!# let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIBus::default(), ExampleCSPin{});
+//!#
+//!#
+//! client.start_overlap_measurement(ADCMode::Normal, true);
+//! // [...] waiting until conversion finished
+//! let data = client.read_overlap_result().unwrap();
+//!
+//! // Voltage of cell 7 measured by ADC2
+//! assert_eq!(25441, data[0][0]);
+//! // Voltage of cell 7 measured by ADC1
+//! assert_eq!(7869, data[0][1]);
+//! // Voltage of cell 13 measured by ADC3
+//! assert_eq!(25822, data[0][2]);
+//! // Voltage of cell 13 measured by ADC2
+//! assert_eq!(8591, data[0][3]);
+//!
 use crate::monitor::Error::TransferError;
 use crate::pec15::PEC15;
 use core::fmt::{Debug, Formatter};
