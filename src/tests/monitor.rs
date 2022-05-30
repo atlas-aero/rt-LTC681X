@@ -1131,3 +1131,146 @@ fn get_cs_no_polling(call_count: usize) -> MockPin {
 
     cs
 }
+
+#[test]
+fn test_ltc6813_read_overlap_results() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
+        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
+        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(2));
+
+    let result = monitor.read_overlap_result().unwrap();
+    assert_eq!(25441, result[0][0]);
+    assert_eq!(7869, result[0][1]);
+    assert_eq!(25822, result[0][2]);
+    assert_eq!(8591, result[0][3]);
+}
+
+#[test]
+fn test_ltc6812_read_overlap_results() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
+        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
+        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6812(bus, get_cs_no_polling(2));
+
+    let result = monitor.read_overlap_result().unwrap();
+    assert_eq!(25441, result[0][0]);
+    assert_eq!(7869, result[0][1]);
+    assert_eq!(25822, result[0][2]);
+    assert_eq!(8591, result[0][3]);
+}
+
+#[test]
+fn test_ltc6811_read_overlap_results() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
+        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6811(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_overlap_result().unwrap();
+    assert_eq!(25441, result[0][0]);
+    assert_eq!(7869, result[0][1]);
+    assert_eq!(0, result[0][2]);
+    assert_eq!(0, result[0][3]);
+}
+
+#[test]
+fn test_ltc6810_read_overlap_results() {
+    let bus = BusMockBuilder::new().into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6810(bus, get_cs_no_polling(0));
+
+    let result = monitor.read_overlap_result().unwrap();
+    assert_eq!(0, result[0][0]);
+    assert_eq!(0, result[0][1]);
+    assert_eq!(0, result[0][2]);
+    assert_eq!(0, result[0][3]);
+}
+
+#[test]
+fn test_read_overlap_results_multiple_devices() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(&[0x53, 0x64, 0x76, 0x1E, 0xB9, 0x1E, 0x1B, 0xC6])
+        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
+        .expect_register_read(&[0xA2, 0x62, 0x05, 0x1F, 0xC9, 0x20, 0xEE, 0x94])
+        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 2> = LTC681X::ltc6813(bus, get_cs_no_polling(2));
+
+    let result = monitor.read_overlap_result().unwrap();
+
+    assert_eq!(24970, result[0][0]);
+    assert_eq!(25683, result[1][0]);
+    assert_eq!(8033, result[0][1]);
+    assert_eq!(7798, result[1][1]);
+
+    assert_eq!(25250, result[0][2]);
+    assert_eq!(25822, result[1][2]);
+    assert_eq!(7941, result[0][3]);
+    assert_eq!(8591, result[1][3]);
+}
+
+#[test]
+fn test_read_overlap_result_pec_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
+        .expect_register_read(&[0x2A, 0x63, 0x8E, 0x1E, 0xEC, 0x1F, 0x11, 0x0D])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.read_overlap_result();
+    match result.unwrap_err() {
+        Error::ChecksumMismatch => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_read_overlap_result_cs_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Err(PinError::Error1));
+
+    let bus = MockSPIBus::new();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.read_overlap_result();
+    match result.unwrap_err() {
+        Error::CSPinError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_read_overlap_result_transfer_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let mut bus = MockSPIBus::new();
+    bus.expect_transfer().times(1).returning(move |_| Err(BusError::Error1));
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.read_overlap_result();
+    match result.unwrap_err() {
+        Error::TransferError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}

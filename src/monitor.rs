@@ -338,6 +338,14 @@ pub trait DeviceTypes: Send + Sync + Sized + 'static {
 
     /// Number of GPIO channels
     const GPIO_COUNT: usize;
+
+    /// Defines the first register storing the results of overlap measurement.
+    /// None in case overlap test is not supported.
+    const OVERLAP_TEST_REG_1: Option<Self::Register>;
+
+    /// Defines the second register storing the results of overlap measurement.
+    /// None in case just one cell is ued for overlap test or if test is no supported at all.
+    const OVERLAP_TEST_REG_2: Option<Self::Register>;
 }
 
 /// Public LTC681X client interface
@@ -386,6 +394,16 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     ) -> Result<Vec<Vec<Voltage<T>, 18>, L>, Self::Error>
     where
         T: 'static;
+
+    /// Reads and returns the results of the overlap measurement
+    ///
+    /// Index 0: Result of ADC A of first cell*
+    /// Index 1: Result of ADC B of first cell*
+    /// Index 2: Result of ADC A of second cell*
+    /// Index 3: Result of ADC B of second cell*
+    ///
+    /// * Number of cells depends on the device type, otherwise 0 value is used
+    fn read_overlap_result(&mut self) -> Result<[[u16; 4]; L], Self::Error>;
 }
 
 /// Public LTC681X interface for polling ADC status
@@ -531,6 +549,32 @@ where
         }
 
         Ok(result)
+    }
+
+    /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_overlap_result)
+    fn read_overlap_result(&mut self) -> Result<[[u16; 4]; L], Self::Error> {
+        let mut data = [[0; 4]; L];
+
+        let register_c = if let Some(register) = T::OVERLAP_TEST_REG_1 {
+            self.read_register(register)?
+        } else {
+            [[0; 3]; L]
+        };
+
+        let register_e = if let Some(register) = T::OVERLAP_TEST_REG_2 {
+            self.read_register(register)?
+        } else {
+            [[0; 3]; L]
+        };
+
+        for device_index in 0..L {
+            data[device_index][0] = register_c[device_index][0];
+            data[device_index][1] = register_c[device_index][1];
+            data[device_index][2] = register_e[device_index][0];
+            data[device_index][3] = register_e[device_index][1];
+        }
+
+        Ok(data)
     }
 }
 

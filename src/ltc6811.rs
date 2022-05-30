@@ -93,6 +93,9 @@ impl DeviceTypes for LTC6811 {
 
     const CELL_COUNT: usize = 12;
     const GPIO_COUNT: usize = 5;
+
+    const OVERLAP_TEST_REG_1: Option<Self::Register> = Some(Register::CellVoltageC);
+    const OVERLAP_TEST_REG_2: Option<Self::Register> = None;
 }
 
 impl<B, CS, const L: usize> LTC681X<B, CS, NoPolling, LTC6811, L>
