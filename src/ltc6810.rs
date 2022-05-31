@@ -1,5 +1,7 @@
 //! Device-specific types for [LTC6810](<https://www.analog.com/en/products/ltc6810-1.html>)
-use crate::commands::{CMD_AUX_V_REG_A, CMD_AUX_V_REG_B, CMD_CELL_V_REG_A, CMD_CELL_V_REG_B};
+use crate::commands::{
+    CMD_AUX_V_REG_A, CMD_AUX_V_REG_B, CMD_CELL_V_REG_A, CMD_CELL_V_REG_B, CMD_STATUS_A, CMD_STATUS_B,
+};
 use crate::monitor::{
     ChannelIndex, ChannelType, DeviceTypes, GroupedRegisterIndex, NoPolling, RegisterAddress, RegisterLocator,
     ToCommandBitmap, ToFullCommand, LTC681X,
@@ -47,6 +49,8 @@ pub enum Register {
     CellVoltageB,
     AuxiliaryA,
     AuxiliaryB,
+    StatusA,
+    StatusB,
 }
 
 /// All conversion channels
@@ -113,6 +117,8 @@ impl ToFullCommand for Register {
             Register::CellVoltageB => CMD_CELL_V_REG_B,
             Register::AuxiliaryA => CMD_AUX_V_REG_A,
             Register::AuxiliaryB => CMD_AUX_V_REG_B,
+            Register::StatusA => CMD_STATUS_A,
+            Register::StatusB => CMD_STATUS_B,
         }
     }
 }
@@ -124,6 +130,8 @@ impl GroupedRegisterIndex for Register {
             Register::CellVoltageB => 1,
             Register::AuxiliaryA => 0,
             Register::AuxiliaryB => 1,
+            Register::StatusA => 0,
+            Register::StatusB => 1,
         }
     }
 }

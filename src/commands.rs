@@ -27,3 +27,9 @@ pub static CMD_AUX_V_REG_C: [u8; 4] = [0x00, 0xD, 0x64, 0xFE];
 
 /// Precomputed command for auxiliary voltage register D
 pub static CMD_AUX_V_REG_D: [u8; 4] = [0x00, 0xF, 0xF9, 0xA8];
+
+/// Precomputed command for status register group A
+pub static CMD_STATUS_A: [u8; 4] = [0x00, 0x10, 0xED, 0x72];
+
+/// Precomputed command for status register group B
+pub static CMD_STATUS_B: [u8; 4] = [0x00, 0x12, 0x70, 0x24];

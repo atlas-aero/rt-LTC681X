@@ -565,7 +565,7 @@ fn test_read_cell_voltages_transfer_error() {
 }
 
 #[test]
-fn test_read_register_register_a() {
+fn test_read_register_aux_a() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1100, 0xEF, 0xCC)
         .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
@@ -580,7 +580,7 @@ fn test_read_register_register_a() {
 }
 
 #[test]
-fn test_read_register_register_b() {
+fn test_read_register_aux_b() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1110, 0x72, 0x9A)
         .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
@@ -595,7 +595,7 @@ fn test_read_register_register_b() {
 }
 
 #[test]
-fn test_read_register_register_c() {
+fn test_read_register_aux_c() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1101, 0x64, 0xFE)
         .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
@@ -610,7 +610,7 @@ fn test_read_register_register_c() {
 }
 
 #[test]
-fn test_read_register_register_d() {
+fn test_read_register_aux_d() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1111, 0xF9, 0xA8)
         .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
@@ -619,6 +619,36 @@ fn test_read_register_register_d() {
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
 
     let result = monitor.read_register(Register::AuxiliaryD).unwrap();
+    assert_eq!(24970, result[0][0]);
+    assert_eq!(8033, result[0][1]);
+    assert_eq!(8655, result[0][2]);
+}
+
+#[test]
+fn test_read_register_status_a() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0001_0000, 0xED, 0x72)
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_register(Register::StatusA).unwrap();
+    assert_eq!(24970, result[0][0]);
+    assert_eq!(8033, result[0][1]);
+    assert_eq!(8655, result[0][2]);
+}
+
+#[test]
+fn test_read_register_status_b() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0001_0010, 0x70, 0x24)
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_register(Register::StatusB).unwrap();
     assert_eq!(24970, result[0][0]);
     assert_eq!(8033, result[0][1]);
     assert_eq!(8655, result[0][2]);

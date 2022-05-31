@@ -10,7 +10,13 @@ fn test_pec15_two_bytes() {
     assert_eq!([0x5, 0x7c], PEC15::calc(&[0x0, 0x18]));
 
     // Cell Voltage register A
-    assert_eq!([7, 194], PEC15::calc(&[0x0, 0x4]));
+    assert_eq!([0x7, 0xC2], PEC15::calc(&[0x0, 0x4]));
+
+    // Status register group A
+    assert_eq!([0xED, 0x72], PEC15::calc(&[0x0, 0x10]));
+
+    // Status register group B
+    assert_eq!([0x70, 0x24], PEC15::calc(&[0x0, 0x12]));
 }
 
 #[test]
