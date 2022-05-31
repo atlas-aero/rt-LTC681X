@@ -186,6 +186,35 @@
 //! assert_eq!(Channel::GPIO7, voltages[0][1].channel);
 //! assert_eq!(7869, voltages[0][1].voltage);
 //! ````
+//!
+//! # Tests
+//!
+//! The LTC681X family supports a number of verification and fault-tests.
+//!
+//! ## Overlap measurement (ADOL command)
+//!
+//! Starting the ADC overlapping measurement and reading the results:
+//! ````
+//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::ltc6813::{CellSelection, LTC6813};
+//!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient};
+//!#
+//!# let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIBus::default(), ExampleCSPin{});
+//!#
+//!#
+//! client.start_overlap_measurement(ADCMode::Normal, true);
+//! // [...] waiting until conversion finished
+//! let data = client.read_overlap_result().unwrap();
+//!
+//! // Voltage of cell 7 measured by ADC2
+//! assert_eq!(25441, data[0][0]);
+//! // Voltage of cell 7 measured by ADC1
+//! assert_eq!(7869, data[0][1]);
+//! // Voltage of cell 13 measured by ADC3
+//! assert_eq!(25822, data[0][2]);
+//! // Voltage of cell 13 measured by ADC2
+//! assert_eq!(8591, data[0][3]);
+//!
 use crate::monitor::Error::TransferError;
 use crate::pec15::PEC15;
 use core::fmt::{Debug, Formatter};
@@ -338,6 +367,14 @@ pub trait DeviceTypes: Send + Sync + Sized + 'static {
 
     /// Number of GPIO channels
     const GPIO_COUNT: usize;
+
+    /// Defines the first register storing the results of overlap measurement.
+    /// None in case overlap test is not supported.
+    const OVERLAP_TEST_REG_1: Option<Self::Register>;
+
+    /// Defines the second register storing the results of overlap measurement.
+    /// None in case just one cell is ued for overlap test or if test is no supported at all.
+    const OVERLAP_TEST_REG_2: Option<Self::Register>;
 }
 
 /// Public LTC681X client interface
@@ -363,6 +400,15 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     /// * `channels`: Measures t:he given GPIO group
     fn start_conv_gpio(&mut self, mode: ADCMode, pins: T::GPIOSelection) -> Result<(), Self::Error>;
 
+    /// Start the  Overlap Measurements (ADOL command)
+    /// Note: This command is not available on LTC6810, as this device only includes one ADC
+    ///
+    /// # Arguments
+    ///
+    /// * `mode`: ADC mode
+    /// * `dcp`: True if discharge is permitted during conversion
+    fn start_overlap_measurement(&mut self, mode: ADCMode, dcp: bool) -> Result<(), Self::Error>;
+
     /// Reads the values of the given register
     /// Returns one array for each device in daisy chain
     fn read_register(&mut self, register: T::Register) -> Result<[[u16; 3]; L], Self::Error>;
@@ -377,6 +423,16 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     ) -> Result<Vec<Vec<Voltage<T>, 18>, L>, Self::Error>
     where
         T: 'static;
+
+    /// Reads and returns the results of the overlap measurement
+    ///
+    /// Index 0: Result of ADC A of first cell*
+    /// Index 1: Result of ADC B of first cell*
+    /// Index 2: Result of ADC A of second cell*
+    /// Index 3: Result of ADC B of second cell*
+    ///
+    /// * Number of cells depends on the device type, otherwise 0 value is used
+    fn read_overlap_result(&mut self) -> Result<[[u16; 4]; L], Self::Error>;
 }
 
 /// Public LTC681X interface for polling ADC status
@@ -460,6 +516,21 @@ where
         self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
     }
 
+    /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.start_overlap_measurement)
+    fn start_overlap_measurement(&mut self, mode: ADCMode, dcp: bool) -> Result<(), Error<B, CS>> {
+        self.cs.set_low().map_err(Error::CSPinError)?;
+        let mut command: u16 = 0b0000_0010_0000_0001;
+
+        command |= (mode as u16) << 7;
+
+        if dcp {
+            command |= 0b0001_0000;
+        }
+
+        self.send_command(command).map_err(Error::TransferError)?;
+        self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
+    }
+
     /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_register)
     fn read_register(&mut self, register: T::Register) -> Result<[[u16; 3]; L], Error<B, CS>> {
         self.read_daisy_chain(register.to_command())
@@ -507,6 +578,32 @@ where
         }
 
         Ok(result)
+    }
+
+    /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_overlap_result)
+    fn read_overlap_result(&mut self) -> Result<[[u16; 4]; L], Self::Error> {
+        let mut data = [[0; 4]; L];
+
+        let register_c = if let Some(register) = T::OVERLAP_TEST_REG_1 {
+            self.read_register(register)?
+        } else {
+            [[0; 3]; L]
+        };
+
+        let register_e = if let Some(register) = T::OVERLAP_TEST_REG_2 {
+            self.read_register(register)?
+        } else {
+            [[0; 3]; L]
+        };
+
+        for device_index in 0..L {
+            data[device_index][0] = register_c[device_index][0];
+            data[device_index][1] = register_c[device_index][1];
+            data[device_index][2] = register_e[device_index][0];
+            data[device_index][3] = register_e[device_index][1];
+        }
+
+        Ok(data)
     }
 }
 
