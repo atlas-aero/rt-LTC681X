@@ -1,7 +1,7 @@
 //! Tests for generic, device type independent, logic
 use crate::ltc6813::{CellSelection, Channel, GPIOSelection, Register};
 use crate::mocks::{BusError, BusMockBuilder, MockPin, MockSPIBus, PinError};
-use crate::monitor::{ADCMode, Error, LTC681XClient, PollClient, LTC681X};
+use crate::monitor::{ADCMode, Error, LTC681XClient, PollClient, StatusGroup, LTC681X};
 
 #[test]
 fn test_start_conv_cells_acc_modes() {
@@ -248,6 +248,95 @@ fn test_start_overlap_measurement_transfer_error() {
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
 
     let result = monitor.start_overlap_measurement(ADCMode::Normal, false);
+    match result.unwrap_err() {
+        Error::TransferError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_measure_internal_parameters_acc_modes() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0011, 0b0110_1000, 0x1C, 0x62)
+        .expect_command(0b0000_0010, 0b1110_1000, 0xD0, 0x8)
+        .expect_command(0b0000_0011, 0b1110_1000, 0x58, 0x44)
+        .expect_command(0b0000_0010, 0b0110_1000, 0x94, 0x2E)
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(4));
+    monitor.measure_internal_parameters(ADCMode::Normal, StatusGroup::All).unwrap();
+    monitor.measure_internal_parameters(ADCMode::Fast, StatusGroup::All).unwrap();
+    monitor
+        .measure_internal_parameters(ADCMode::Filtered, StatusGroup::All)
+        .unwrap();
+    monitor.measure_internal_parameters(ADCMode::Other, StatusGroup::All).unwrap();
+}
+
+#[test]
+fn test_measure_internal_parameters_status_groups() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0011, 0b0110_1000, 0x1C, 0x62)
+        .expect_command(0b0000_0011, 0b0110_1001, 0x97, 0x50)
+        .expect_command(0b0000_0011, 0b0110_1010, 0x81, 0x34)
+        .expect_command(0b0000_0011, 0b0110_1011, 0xA, 0x6)
+        .expect_command(0b0000_0011, 0b0110_1100, 0xAD, 0xFC)
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(5));
+    monitor.measure_internal_parameters(ADCMode::Normal, StatusGroup::All).unwrap();
+    monitor
+        .measure_internal_parameters(ADCMode::Normal, StatusGroup::CellSum)
+        .unwrap();
+    monitor
+        .measure_internal_parameters(ADCMode::Normal, StatusGroup::Temperature)
+        .unwrap();
+    monitor
+        .measure_internal_parameters(ADCMode::Normal, StatusGroup::AnalogVoltage)
+        .unwrap();
+    monitor
+        .measure_internal_parameters(ADCMode::Normal, StatusGroup::DigitalVoltage)
+        .unwrap();
+}
+
+#[test]
+fn test_measure_internal_parameters_sdo_polling() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0011, 0b0110_1000, 0x1C, 0x62)
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs).enable_sdo_polling();
+    monitor.measure_internal_parameters(ADCMode::Normal, StatusGroup::All).unwrap();
+}
+
+#[test]
+fn test_measure_internal_parameters_cs_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Err(PinError::Error1));
+
+    let bus = MockSPIBus::new();
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.measure_internal_parameters(ADCMode::Normal, StatusGroup::All);
+    match result.unwrap_err() {
+        Error::CSPinError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_measure_internal_parameters_transfer_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let mut bus = MockSPIBus::new();
+    bus.expect_transfer().times(1).returning(move |_| Err(BusError::Error1));
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.measure_internal_parameters(ADCMode::Normal, StatusGroup::All);
     match result.unwrap_err() {
         Error::TransferError(_) => {}
         _ => panic!("Unexpected error type"),

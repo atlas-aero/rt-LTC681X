@@ -261,6 +261,27 @@ pub enum ADCMode {
     Other = 0x0,
 }
 
+/// Selection of status group
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum StatusGroup {
+    /// Includes SC, ITMP, VA, VD
+    All = 0x0,
+    /// Measures the total voltage of all cells (SC)
+    CellSum = 0x1,
+    /// Measures the internal die temperature (ITMP)
+    Temperature = 0x2,
+    /// Measure the internal analog voltage supply (VA)
+    AnalogVoltage = 0x3,
+    /// Measures the internal digital voltage supply (VD)
+    DigitalVoltage = 0x4,
+}
+
+impl ToCommandBitmap for StatusGroup {
+    fn to_bitmap(&self) -> u16 {
+        *self as u16
+    }
+}
+
 /// Location of a conversion voltage
 pub struct RegisterAddress<T: DeviceTypes> {
     /// Either a cell or GPIO
@@ -409,6 +430,14 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     /// * `dcp`: True if discharge is permitted during conversion
     fn start_overlap_measurement(&mut self, mode: ADCMode, dcp: bool) -> Result<(), Self::Error>;
 
+    /// Starts measuring internal device parameters (ADSTAT command)
+    ///
+    /// # Arguments
+    ///
+    /// * `mode`: ADC mode
+    /// * `group`: Selection of status parameter to measure
+    fn measure_internal_parameters(&mut self, mode: ADCMode, group: StatusGroup) -> Result<(), Self::Error>;
+
     /// Reads the values of the given register
     /// Returns one array for each device in daisy chain
     fn read_register(&mut self, register: T::Register) -> Result<[[u16; 3]; L], Self::Error>;
@@ -526,6 +555,18 @@ where
         if dcp {
             command |= 0b0001_0000;
         }
+
+        self.send_command(command).map_err(Error::TransferError)?;
+        self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
+    }
+
+    /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.measure_internal_parameters)
+    fn measure_internal_parameters(&mut self, mode: ADCMode, group: StatusGroup) -> Result<(), Error<B, CS>> {
+        self.cs.set_low().map_err(Error::CSPinError)?;
+        let mut command: u16 = 0b0000_0010_0110_1000;
+
+        command |= (mode as u16) << 7;
+        command |= group.to_bitmap();
 
         self.send_command(command).map_err(Error::TransferError)?;
         self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
