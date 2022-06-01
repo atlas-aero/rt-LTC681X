@@ -222,6 +222,7 @@ use core::marker::PhantomData;
 use core::slice::Iter;
 use embedded_hal::blocking::spi::Transfer;
 use embedded_hal::digital::v2::OutputPin;
+use fixed::types::I16F16;
 use heapless::Vec;
 
 /// Poll Strategy
@@ -333,6 +334,9 @@ pub enum Error<B: Transfer<u8>, CS: OutputPin> {
 
     /// PEC checksum of returned data was invalid
     ChecksumMismatch,
+
+    /// Read temperature was to high for fitting in signed 16-Bit integer (> 431 °C)
+    TemperatureOverflow,
 }
 
 /// Trait for casting command options to command bitmaps
@@ -369,6 +373,22 @@ pub enum ChannelType {
     Reference,
 }
 
+/// Collection of internal device parameters, measured by ADSTAT command
+#[derive(Debug)]
+pub struct InternalDeviceParameters {
+    /// Sum of all cells in uV
+    pub total_voltage: u32,
+
+    /// Voltage of analog power supply in uV
+    pub analog_power: u32,
+
+    /// Voltage of digital power supply in uV
+    pub digital_power: u32,
+
+    /// Die temperature in °C as fixed-point number
+    pub temperature: I16F16,
+}
+
 /// Device specific types
 pub trait DeviceTypes: Send + Sync + Sized + 'static {
     /// Argument for the identification of cell groups, which depends on the exact device type.
@@ -396,6 +416,12 @@ pub trait DeviceTypes: Send + Sync + Sized + 'static {
     /// Defines the second register storing the results of overlap measurement.
     /// None in case just one cell is ued for overlap test or if test is no supported at all.
     const OVERLAP_TEST_REG_2: Option<Self::Register>;
+
+    /// Status group A register
+    const REG_STATUS_A: Self::Register;
+
+    /// Status group b register
+    const REG_STATUS_B: Self::Register;
 }
 
 /// Public LTC681X client interface
@@ -462,6 +488,10 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     ///
     /// * Number of cells depends on the device type, otherwise 0 value is used
     fn read_overlap_result(&mut self) -> Result<[[u16; 4]; L], Self::Error>;
+
+    /// Reads internal device parameters measured by ATOL command
+    /// Returns one array item for each device in daisy chain
+    fn read_internal_device_parameters(&mut self) -> Result<Vec<InternalDeviceParameters, L>, Self::Error>;
 }
 
 /// Public LTC681X interface for polling ADC status
@@ -646,6 +676,44 @@ where
 
         Ok(data)
     }
+
+    /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_internal_device_parameters)
+    fn read_internal_device_parameters(&mut self) -> Result<Vec<InternalDeviceParameters, L>, Self::Error> {
+        let status_a = self.read_register(T::REG_STATUS_A)?;
+        let status_b = self.read_register(T::REG_STATUS_B)?;
+
+        let mut parameters = Vec::new();
+
+        for device_index in 0..L {
+            let temp_raw = status_a[device_index][1];
+
+            if temp_raw >= 53744 {
+                return Err(Error::TemperatureOverflow);
+            }
+
+            // Constant of 276 °C, which needs to be subtracted
+            const TEMP_SUB: i16 = 20976;
+
+            // Check if temperature is negative
+            let temp_i32: i16 = if temp_raw >= TEMP_SUB as u16 {
+                temp_raw as i16 - TEMP_SUB
+            } else {
+                0 - TEMP_SUB + temp_raw as i16
+            };
+
+            // Applying factor 100 uV/7.6 mV
+            let temp_fixed = I16F16::from_num(temp_i32) / 76;
+
+            let _ = parameters.push(InternalDeviceParameters {
+                total_voltage: status_a[device_index][0] as u32 * 30 * 100,
+                analog_power: status_a[device_index][2] as u32 * 100,
+                digital_power: status_b[device_index][0] as u32 * 100,
+                temperature: temp_fixed,
+            });
+        }
+
+        Ok(parameters)
+    }
 }
 
 impl<B, CS, P, T, const L: usize> LTC681X<B, CS, P, T, L>
@@ -742,6 +810,7 @@ impl<B: Transfer<u8>, CS: OutputPin> Debug for Error<B, CS> {
             Error::TransferError(_) => f.debug_struct("TransferError").finish(),
             Error::CSPinError(_) => f.debug_struct("CSPinError").finish(),
             Error::ChecksumMismatch => f.debug_struct("ChecksumMismatch").finish(),
+            Error::TemperatureOverflow => f.debug_struct("TemperatureOverflow").finish(),
         }
     }
 }

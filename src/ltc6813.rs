@@ -117,6 +117,9 @@ impl DeviceTypes for LTC6813 {
 
     const OVERLAP_TEST_REG_1: Option<Self::Register> = Some(Register::CellVoltageC);
     const OVERLAP_TEST_REG_2: Option<Self::Register> = Some(Register::CellVoltageE);
+
+    const REG_STATUS_A: Self::Register = Register::StatusA;
+    const REG_STATUS_B: Self::Register = Register::StatusB;
 }
 
 impl<B, CS, const L: usize> LTC681X<B, CS, NoPolling, LTC6813, L>
