@@ -22,6 +22,10 @@ impl Transfer<u8> for ExampleSPIBus {
 
         if words[1] == 0xff {
             return match self.command {
+                // Status register A
+                0b0001_0000 => Ok(&[0x12, 0x62, 0xA8, 0x62, 0x00, 0x7D, 0x31, 0x8A]),
+                // Status register B
+                0b0001_0010 => Ok(&[0x00, 0xC8, 0x00, 0x66, 0x00, 0x1B, 0xF1, 0x40]),
                 // Cell voltage register B
                 0b0000_0100 => Ok(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C]),
                 // Cell voltage register B

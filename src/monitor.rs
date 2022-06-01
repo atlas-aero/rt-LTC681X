@@ -187,7 +187,7 @@
 //! assert_eq!(7869, voltages[0][1].voltage);
 //! ````
 //!
-//! # Tests
+//! # Self-tests
 //!
 //! The LTC681X family supports a number of verification and fault-tests.
 //!
@@ -214,7 +214,32 @@
 //! assert_eq!(25822, data[0][2]);
 //! // Voltage of cell 13 measured by ADC2
 //! assert_eq!(8591, data[0][3]);
+//! ````
 //!
+//! ## Internal device parameters (ADSTAT command)
+//!
+//! Measuring internal device parameters and reading the results:
+//! ````
+//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::ltc6813::{CellSelection, LTC6813};
+//!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient, StatusGroup};
+//!#
+//!# let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIBus::default(), ExampleCSPin{});
+//!#
+//!#
+//! client.measure_internal_parameters(ADCMode::Normal, StatusGroup::All);
+//! // [...] waiting until conversion finished
+//! let data = client.read_internal_device_parameters().unwrap();
+//!
+//! // Sum of all voltages in uV => 75.318 V
+//! assert_eq!(75_318_000, data[0].total_voltage);
+//! // Die temperature in °C
+//! assert_eq!("56.31578", data[0].temperature.to_string());
+//! // Analog power supply voltage in uV => 3.2 V
+//! assert_eq!(3_200_000, data[0].analog_power);
+//! // Digital power supply voltage in uV => 5.12 V
+//! assert_eq!(5_120_000, data[0].digital_power);
+//! ````
 use crate::monitor::Error::TransferError;
 use crate::pec15::PEC15;
 use core::fmt::{Debug, Formatter};
