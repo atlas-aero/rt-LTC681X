@@ -65,6 +65,8 @@ pub enum Register {
     AuxiliaryB,
     AuxiliaryC,
     AuxiliaryD,
+    StatusA,
+    StatusB,
 }
 
 /// All conversion channels
@@ -115,6 +117,9 @@ impl DeviceTypes for LTC6813 {
 
     const OVERLAP_TEST_REG_1: Option<Self::Register> = Some(Register::CellVoltageC);
     const OVERLAP_TEST_REG_2: Option<Self::Register> = Some(Register::CellVoltageE);
+
+    const REG_STATUS_A: Self::Register = Register::StatusA;
+    const REG_STATUS_B: Self::Register = Register::StatusB;
 }
 
 impl<B, CS, const L: usize> LTC681X<B, CS, NoPolling, LTC6813, L>
@@ -154,6 +159,8 @@ impl ToFullCommand for Register {
             Register::AuxiliaryB => CMD_AUX_V_REG_B,
             Register::AuxiliaryC => CMD_AUX_V_REG_C,
             Register::AuxiliaryD => CMD_AUX_V_REG_D,
+            Register::StatusA => CMD_STATUS_A,
+            Register::StatusB => CMD_STATUS_B,
         }
     }
 }
@@ -171,6 +178,8 @@ impl GroupedRegisterIndex for Register {
             Register::AuxiliaryB => 1,
             Register::AuxiliaryC => 2,
             Register::AuxiliaryD => 3,
+            Register::StatusA => 0,
+            Register::StatusB => 1,
         }
     }
 }

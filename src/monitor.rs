@@ -187,7 +187,7 @@
 //! assert_eq!(7869, voltages[0][1].voltage);
 //! ````
 //!
-//! # Tests
+//! # Self-tests
 //!
 //! The LTC681X family supports a number of verification and fault-tests.
 //!
@@ -214,7 +214,32 @@
 //! assert_eq!(25822, data[0][2]);
 //! // Voltage of cell 13 measured by ADC2
 //! assert_eq!(8591, data[0][3]);
+//! ````
 //!
+//! ## Internal device parameters (ADSTAT command)
+//!
+//! Measuring internal device parameters and reading the results:
+//! ````
+//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::ltc6813::{CellSelection, LTC6813};
+//!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient, StatusGroup};
+//!#
+//!# let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIBus::default(), ExampleCSPin{});
+//!#
+//!#
+//! client.measure_internal_parameters(ADCMode::Normal, StatusGroup::All);
+//! // [...] waiting until conversion finished
+//! let data = client.read_internal_device_parameters().unwrap();
+//!
+//! // Sum of all voltages in uV => 75.318 V
+//! assert_eq!(75_318_000, data[0].total_voltage);
+//! // Die temperature in °C
+//! assert_eq!("56.31578", data[0].temperature.to_string());
+//! // Analog power supply voltage in uV => 3.2 V
+//! assert_eq!(3_200_000, data[0].analog_power);
+//! // Digital power supply voltage in uV => 5.12 V
+//! assert_eq!(5_120_000, data[0].digital_power);
+//! ````
 use crate::monitor::Error::TransferError;
 use crate::pec15::PEC15;
 use core::fmt::{Debug, Formatter};
@@ -222,6 +247,7 @@ use core::marker::PhantomData;
 use core::slice::Iter;
 use embedded_hal::blocking::spi::Transfer;
 use embedded_hal::digital::v2::OutputPin;
+use fixed::types::I16F16;
 use heapless::Vec;
 
 /// Poll Strategy
@@ -259,6 +285,27 @@ pub enum ADCMode {
     Filtered = 0x3,
     /// 422Hz or 1kHz in case of CFGAR0=1 configuration
     Other = 0x0,
+}
+
+/// Selection of status group
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum StatusGroup {
+    /// Includes SC, ITMP, VA, VD
+    All = 0x0,
+    /// Measures the total voltage of all cells (SC)
+    CellSum = 0x1,
+    /// Measures the internal die temperature (ITMP)
+    Temperature = 0x2,
+    /// Measure the internal analog voltage supply (VA)
+    AnalogVoltage = 0x3,
+    /// Measures the internal digital voltage supply (VD)
+    DigitalVoltage = 0x4,
+}
+
+impl ToCommandBitmap for StatusGroup {
+    fn to_bitmap(&self) -> u16 {
+        *self as u16
+    }
 }
 
 /// Location of a conversion voltage
@@ -312,6 +359,9 @@ pub enum Error<B: Transfer<u8>, CS: OutputPin> {
 
     /// PEC checksum of returned data was invalid
     ChecksumMismatch,
+
+    /// Read temperature was to high for fitting in signed 16-Bit integer (> 431 °C)
+    TemperatureOverflow,
 }
 
 /// Trait for casting command options to command bitmaps
@@ -348,6 +398,22 @@ pub enum ChannelType {
     Reference,
 }
 
+/// Collection of internal device parameters, measured by ADSTAT command
+#[derive(Debug)]
+pub struct InternalDeviceParameters {
+    /// Sum of all cells in uV
+    pub total_voltage: u32,
+
+    /// Voltage of analog power supply in uV
+    pub analog_power: u32,
+
+    /// Voltage of digital power supply in uV
+    pub digital_power: u32,
+
+    /// Die temperature in °C as fixed-point number
+    pub temperature: I16F16,
+}
+
 /// Device specific types
 pub trait DeviceTypes: Send + Sync + Sized + 'static {
     /// Argument for the identification of cell groups, which depends on the exact device type.
@@ -375,6 +441,12 @@ pub trait DeviceTypes: Send + Sync + Sized + 'static {
     /// Defines the second register storing the results of overlap measurement.
     /// None in case just one cell is ued for overlap test or if test is no supported at all.
     const OVERLAP_TEST_REG_2: Option<Self::Register>;
+
+    /// Status group A register
+    const REG_STATUS_A: Self::Register;
+
+    /// Status group b register
+    const REG_STATUS_B: Self::Register;
 }
 
 /// Public LTC681X client interface
@@ -409,6 +481,14 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     /// * `dcp`: True if discharge is permitted during conversion
     fn start_overlap_measurement(&mut self, mode: ADCMode, dcp: bool) -> Result<(), Self::Error>;
 
+    /// Starts measuring internal device parameters (ADSTAT command)
+    ///
+    /// # Arguments
+    ///
+    /// * `mode`: ADC mode
+    /// * `group`: Selection of status parameter to measure
+    fn measure_internal_parameters(&mut self, mode: ADCMode, group: StatusGroup) -> Result<(), Self::Error>;
+
     /// Reads the values of the given register
     /// Returns one array for each device in daisy chain
     fn read_register(&mut self, register: T::Register) -> Result<[[u16; 3]; L], Self::Error>;
@@ -433,6 +513,10 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     ///
     /// * Number of cells depends on the device type, otherwise 0 value is used
     fn read_overlap_result(&mut self) -> Result<[[u16; 4]; L], Self::Error>;
+
+    /// Reads internal device parameters measured by ATOL command
+    /// Returns one array item for each device in daisy chain
+    fn read_internal_device_parameters(&mut self) -> Result<Vec<InternalDeviceParameters, L>, Self::Error>;
 }
 
 /// Public LTC681X interface for polling ADC status
@@ -531,6 +615,18 @@ where
         self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
     }
 
+    /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.measure_internal_parameters)
+    fn measure_internal_parameters(&mut self, mode: ADCMode, group: StatusGroup) -> Result<(), Error<B, CS>> {
+        self.cs.set_low().map_err(Error::CSPinError)?;
+        let mut command: u16 = 0b0000_0100_0110_1000;
+
+        command |= (mode as u16) << 7;
+        command |= group.to_bitmap();
+
+        self.send_command(command).map_err(Error::TransferError)?;
+        self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
+    }
+
     /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_register)
     fn read_register(&mut self, register: T::Register) -> Result<[[u16; 3]; L], Error<B, CS>> {
         self.read_daisy_chain(register.to_command())
@@ -604,6 +700,44 @@ where
         }
 
         Ok(data)
+    }
+
+    /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_internal_device_parameters)
+    fn read_internal_device_parameters(&mut self) -> Result<Vec<InternalDeviceParameters, L>, Self::Error> {
+        let status_a = self.read_register(T::REG_STATUS_A)?;
+        let status_b = self.read_register(T::REG_STATUS_B)?;
+
+        let mut parameters = Vec::new();
+
+        for device_index in 0..L {
+            let temp_raw = status_a[device_index][1];
+
+            if temp_raw >= 53744 {
+                return Err(Error::TemperatureOverflow);
+            }
+
+            // Constant of 276 °C, which needs to be subtracted
+            const TEMP_SUB: i16 = 20976;
+
+            // Check if temperature is negative
+            let temp_i32: i16 = if temp_raw >= TEMP_SUB as u16 {
+                temp_raw as i16 - TEMP_SUB
+            } else {
+                0 - TEMP_SUB + temp_raw as i16
+            };
+
+            // Applying factor 100 uV/7.6 mV
+            let temp_fixed = I16F16::from_num(temp_i32) / 76;
+
+            let _ = parameters.push(InternalDeviceParameters {
+                total_voltage: status_a[device_index][0] as u32 * 30 * 100,
+                analog_power: status_a[device_index][2] as u32 * 100,
+                digital_power: status_b[device_index][0] as u32 * 100,
+                temperature: temp_fixed,
+            });
+        }
+
+        Ok(parameters)
     }
 }
 
@@ -701,6 +835,7 @@ impl<B: Transfer<u8>, CS: OutputPin> Debug for Error<B, CS> {
             Error::TransferError(_) => f.debug_struct("TransferError").finish(),
             Error::CSPinError(_) => f.debug_struct("CSPinError").finish(),
             Error::ChecksumMismatch => f.debug_struct("ChecksumMismatch").finish(),
+            Error::TemperatureOverflow => f.debug_struct("TemperatureOverflow").finish(),
         }
     }
 }

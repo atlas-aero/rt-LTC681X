@@ -9,6 +9,7 @@
 //! * [ADC status polling (SDO line method)](crate::monitor#polling)
 //! * [Mapping voltages to GPIO and cell groups](crate::monitor#mapping-voltages)
 //! * [Overlapping ADC measurement](crate::monitor#overlap-measurement-adol-command)
+//! * [Internal device parameters measurement](crate::monitor#internal-device-parameters-adstat-command)
 //!
 //! # Example
 //!

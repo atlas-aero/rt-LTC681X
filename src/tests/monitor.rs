@@ -1,7 +1,8 @@
 //! Tests for generic, device type independent, logic
 use crate::ltc6813::{CellSelection, Channel, GPIOSelection, Register};
 use crate::mocks::{BusError, BusMockBuilder, MockPin, MockSPIBus, PinError};
-use crate::monitor::{ADCMode, Error, LTC681XClient, PollClient, LTC681X};
+use crate::monitor::{ADCMode, Error, LTC681XClient, PollClient, StatusGroup, LTC681X};
+use alloc::string::ToString;
 
 #[test]
 fn test_start_conv_cells_acc_modes() {
@@ -255,6 +256,95 @@ fn test_start_overlap_measurement_transfer_error() {
 }
 
 #[test]
+fn test_measure_internal_parameters_acc_modes() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0101, 0b0110_1000, 0x3B, 0xAE)
+        .expect_command(0b0000_0100, 0b1110_1000, 0xF7, 0xC4)
+        .expect_command(0b0000_0101, 0b1110_1000, 0x7F, 0x88)
+        .expect_command(0b0000_0100, 0b0110_1000, 0xB3, 0xE2)
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(4));
+    monitor.measure_internal_parameters(ADCMode::Normal, StatusGroup::All).unwrap();
+    monitor.measure_internal_parameters(ADCMode::Fast, StatusGroup::All).unwrap();
+    monitor
+        .measure_internal_parameters(ADCMode::Filtered, StatusGroup::All)
+        .unwrap();
+    monitor.measure_internal_parameters(ADCMode::Other, StatusGroup::All).unwrap();
+}
+
+#[test]
+fn test_measure_internal_parameters_status_groups() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0101, 0b0110_1000, 0x3B, 0xAE)
+        .expect_command(0b0000_0101, 0b0110_1001, 0xB0, 0x9C)
+        .expect_command(0b0000_0101, 0b0110_1010, 0xA6, 0xF8)
+        .expect_command(0b0000_0101, 0b0110_1011, 0x2D, 0xCA)
+        .expect_command(0b0000_0101, 0b0110_1100, 0x8A, 0x30)
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(5));
+    monitor.measure_internal_parameters(ADCMode::Normal, StatusGroup::All).unwrap();
+    monitor
+        .measure_internal_parameters(ADCMode::Normal, StatusGroup::CellSum)
+        .unwrap();
+    monitor
+        .measure_internal_parameters(ADCMode::Normal, StatusGroup::Temperature)
+        .unwrap();
+    monitor
+        .measure_internal_parameters(ADCMode::Normal, StatusGroup::AnalogVoltage)
+        .unwrap();
+    monitor
+        .measure_internal_parameters(ADCMode::Normal, StatusGroup::DigitalVoltage)
+        .unwrap();
+}
+
+#[test]
+fn test_measure_internal_parameters_sdo_polling() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0101, 0b0110_1000, 59, 174)
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs).enable_sdo_polling();
+    monitor.measure_internal_parameters(ADCMode::Normal, StatusGroup::All).unwrap();
+}
+
+#[test]
+fn test_measure_internal_parameters_cs_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Err(PinError::Error1));
+
+    let bus = MockSPIBus::new();
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.measure_internal_parameters(ADCMode::Normal, StatusGroup::All);
+    match result.unwrap_err() {
+        Error::CSPinError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_measure_internal_parameters_transfer_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let mut bus = MockSPIBus::new();
+    bus.expect_transfer().times(1).returning(move |_| Err(BusError::Error1));
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.measure_internal_parameters(ADCMode::Normal, StatusGroup::All);
+    match result.unwrap_err() {
+        Error::TransferError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
 fn test_sdo_polling_ready() {
     let mut cs = MockPin::new();
     cs.expect_set_high().times(1).returning(move || Ok(()));
@@ -476,7 +566,7 @@ fn test_read_cell_voltages_transfer_error() {
 }
 
 #[test]
-fn test_read_register_register_a() {
+fn test_read_register_aux_a() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1100, 0xEF, 0xCC)
         .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
@@ -491,7 +581,7 @@ fn test_read_register_register_a() {
 }
 
 #[test]
-fn test_read_register_register_b() {
+fn test_read_register_aux_b() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1110, 0x72, 0x9A)
         .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
@@ -506,7 +596,7 @@ fn test_read_register_register_b() {
 }
 
 #[test]
-fn test_read_register_register_c() {
+fn test_read_register_aux_c() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1101, 0x64, 0xFE)
         .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
@@ -521,7 +611,7 @@ fn test_read_register_register_c() {
 }
 
 #[test]
-fn test_read_register_register_d() {
+fn test_read_register_aux_d() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1111, 0xF9, 0xA8)
         .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
@@ -530,6 +620,36 @@ fn test_read_register_register_d() {
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
 
     let result = monitor.read_register(Register::AuxiliaryD).unwrap();
+    assert_eq!(24970, result[0][0]);
+    assert_eq!(8033, result[0][1]);
+    assert_eq!(8655, result[0][2]);
+}
+
+#[test]
+fn test_read_register_status_a() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0001_0000, 0xED, 0x72)
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_register(Register::StatusA).unwrap();
+    assert_eq!(24970, result[0][0]);
+    assert_eq!(8033, result[0][1]);
+    assert_eq!(8655, result[0][2]);
+}
+
+#[test]
+fn test_read_register_status_b() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0001_0010, 0x70, 0x24)
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_register(Register::StatusB).unwrap();
     assert_eq!(24970, result[0][0]);
     assert_eq!(8033, result[0][1]);
     assert_eq!(8655, result[0][2]);
@@ -1269,6 +1389,123 @@ fn test_read_overlap_result_transfer_error() {
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
 
     let result = monitor.read_overlap_result();
+    match result.unwrap_err() {
+        Error::TransferError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_ltc6813_read_internal_device_parameters() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0001_0000, 0xED, 0x72)
+        .expect_register_read(&[0x12, 0x62, 0xA8, 0x62, 0x00, 0x7D, 0x31, 0x8A])
+        .expect_command(0b0000_0000, 0b0001_0010, 0x70, 0x24)
+        .expect_register_read(&[0x00, 0xC8, 0x00, 0x66, 0x00, 0x1B, 0xF1, 0x40])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(2));
+
+    let result = monitor.read_internal_device_parameters().unwrap();
+    assert_eq!(1, result.len());
+
+    assert_eq!(75_318_000, result[0].total_voltage);
+    assert_eq!("56.31578", result[0].temperature.to_string());
+    assert_eq!(3_200_000, result[0].analog_power);
+    assert_eq!(5_120_000, result[0].digital_power);
+}
+
+#[test]
+fn test_ltc6813_read_internal_device_parameters_temp_overflow() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0001_0000, 0xED, 0x72)
+        .expect_register_read(&[0x12, 0x62, 0xF1, 0xD1, 0x00, 0x7D, 0xE6, 0x12])
+        .expect_command(0b0000_0000, 0b0001_0010, 0x70, 0x24)
+        .expect_register_read(&[0x00, 0xC8, 0x00, 0x66, 0x00, 0x1B, 0xF1, 0x40])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(2));
+
+    let result = monitor.read_internal_device_parameters();
+    match result.unwrap_err() {
+        Error::TemperatureOverflow => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_ltc6813_read_internal_device_parameters_multiple_devices() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0001_0000, 0xED, 0x72)
+        .expect_register_read(&[0x12, 0x62, 0xA8, 0x62, 0x00, 0x7D, 0x31, 0x8A])
+        .expect_register_read(&[0x1A, 0x59, 0x74, 0x50, 0x60, 0x6D, 0x89, 0xD8])
+        .expect_command(0b0000_0000, 0b0001_0010, 0x70, 0x24)
+        .expect_register_read(&[0x00, 0xC8, 0x00, 0x66, 0x00, 0x1B, 0xF1, 0x40])
+        .expect_register_read(&[0x68, 0xBF, 0x00, 0x56, 0x00, 0x2B, 0x5A, 0xC4])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 2> = LTC681X::ltc6813(bus, get_cs_no_polling(2));
+
+    let result = monitor.read_internal_device_parameters().unwrap();
+    assert_eq!(2, result.len());
+
+    assert_eq!(75_318_000, result[0].total_voltage);
+    assert_eq!("56.31578", result[0].temperature.to_string());
+    assert_eq!(3_200_000, result[0].analog_power);
+    assert_eq!(5_120_000, result[0].digital_power);
+
+    assert_eq!(68_430_000, result[1].total_voltage);
+    assert_eq!("-5", result[1].temperature.to_string());
+    assert_eq!(2_800_000, result[1].analog_power);
+    assert_eq!(4_900_000, result[1].digital_power);
+}
+
+#[test]
+fn test_read_internal_device_parameters_pec_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0001_0000, 0xED, 0x72)
+        .expect_register_read(&[0x2A, 0x63, 0x8E, 0x1E, 0xEC, 0x1F, 0x11, 0x0D])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.read_internal_device_parameters();
+    match result.unwrap_err() {
+        Error::ChecksumMismatch => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_read_internal_device_parameters_cs_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Err(PinError::Error1));
+
+    let bus = MockSPIBus::new();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.read_internal_device_parameters();
+    match result.unwrap_err() {
+        Error::CSPinError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_read_internal_device_parameters_transfer_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let mut bus = MockSPIBus::new();
+    bus.expect_transfer().times(1).returning(move |_| Err(BusError::Error1));
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.read_internal_device_parameters();
     match result.unwrap_err() {
         Error::TransferError(_) => {}
         _ => panic!("Unexpected error type"),
