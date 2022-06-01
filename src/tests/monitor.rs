@@ -258,10 +258,10 @@ fn test_start_overlap_measurement_transfer_error() {
 #[test]
 fn test_measure_internal_parameters_acc_modes() {
     let bus = BusMockBuilder::new()
-        .expect_command(0b0000_0011, 0b0110_1000, 0x1C, 0x62)
-        .expect_command(0b0000_0010, 0b1110_1000, 0xD0, 0x8)
-        .expect_command(0b0000_0011, 0b1110_1000, 0x58, 0x44)
-        .expect_command(0b0000_0010, 0b0110_1000, 0x94, 0x2E)
+        .expect_command(0b0000_0101, 0b0110_1000, 0x3B, 0xAE)
+        .expect_command(0b0000_0100, 0b1110_1000, 0xF7, 0xC4)
+        .expect_command(0b0000_0101, 0b1110_1000, 0x7F, 0x88)
+        .expect_command(0b0000_0100, 0b0110_1000, 0xB3, 0xE2)
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(4));
@@ -276,11 +276,11 @@ fn test_measure_internal_parameters_acc_modes() {
 #[test]
 fn test_measure_internal_parameters_status_groups() {
     let bus = BusMockBuilder::new()
-        .expect_command(0b0000_0011, 0b0110_1000, 0x1C, 0x62)
-        .expect_command(0b0000_0011, 0b0110_1001, 0x97, 0x50)
-        .expect_command(0b0000_0011, 0b0110_1010, 0x81, 0x34)
-        .expect_command(0b0000_0011, 0b0110_1011, 0xA, 0x6)
-        .expect_command(0b0000_0011, 0b0110_1100, 0xAD, 0xFC)
+        .expect_command(0b0000_0101, 0b0110_1000, 0x3B, 0xAE)
+        .expect_command(0b0000_0101, 0b0110_1001, 0xB0, 0x9C)
+        .expect_command(0b0000_0101, 0b0110_1010, 0xA6, 0xF8)
+        .expect_command(0b0000_0101, 0b0110_1011, 0x2D, 0xCA)
+        .expect_command(0b0000_0101, 0b0110_1100, 0x8A, 0x30)
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(5));
@@ -305,7 +305,7 @@ fn test_measure_internal_parameters_sdo_polling() {
     cs.expect_set_low().times(1).returning(move || Ok(()));
 
     let bus = BusMockBuilder::new()
-        .expect_command(0b0000_0011, 0b0110_1000, 0x1C, 0x62)
+        .expect_command(0b0000_0101, 0b0110_1000, 59, 174)
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs).enable_sdo_polling();

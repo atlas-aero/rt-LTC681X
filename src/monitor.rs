@@ -618,7 +618,7 @@ where
     /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.measure_internal_parameters)
     fn measure_internal_parameters(&mut self, mode: ADCMode, group: StatusGroup) -> Result<(), Error<B, CS>> {
         self.cs.set_low().map_err(Error::CSPinError)?;
-        let mut command: u16 = 0b0000_0010_0110_1000;
+        let mut command: u16 = 0b0000_0100_0110_1000;
 
         command |= (mode as u16) << 7;
         command |= group.to_bitmap();
