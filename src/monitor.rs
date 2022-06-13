@@ -373,7 +373,7 @@ pub trait ToCommandBitmap {
 /// Trait for casting to constant (precomputed) commands
 pub trait ToFullCommand {
     /// Returns the full command + PEC15
-    fn to_command(&self) -> [u8; 4];
+    fn to_read_command(&self) -> [u8; 4];
 }
 
 /// Converts channels (cells or GPIOs) to indexes
@@ -629,7 +629,7 @@ where
 
     /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_register)
     fn read_register(&mut self, register: T::Register) -> Result<[[u16; 3]; L], Error<B, CS>> {
-        self.read_daisy_chain(register.to_command())
+        self.read_daisy_chain(register.to_read_command())
     }
 
     /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_voltages)

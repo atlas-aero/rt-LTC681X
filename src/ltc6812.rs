@@ -1,7 +1,8 @@
 //! Device-specific types for [LTC6812](<https://www.analog.com/en/products/ltc6812-1.html>)
 use crate::commands::{
-    CMD_AUX_V_REG_A, CMD_AUX_V_REG_B, CMD_AUX_V_REG_C, CMD_AUX_V_REG_D, CMD_CELL_V_REG_A, CMD_CELL_V_REG_B,
-    CMD_CELL_V_REG_C, CMD_CELL_V_REG_D, CMD_CELL_V_REG_E, CMD_CONF_A, CMD_CONF_B, CMD_STATUS_A, CMD_STATUS_B,
+    CMD_R_AUX_V_REG_A, CMD_R_AUX_V_REG_B, CMD_R_AUX_V_REG_C, CMD_R_AUX_V_REG_D, CMD_R_CELL_V_REG_A, CMD_R_CELL_V_REG_B,
+    CMD_R_CELL_V_REG_C, CMD_R_CELL_V_REG_D, CMD_R_CELL_V_REG_E, CMD_R_CONF_A, CMD_R_CONF_B, CMD_R_STATUS_A,
+    CMD_R_STATUS_B,
 };
 use crate::monitor::{
     ChannelIndex, ChannelType, DeviceTypes, GroupedRegisterIndex, NoPolling, RegisterAddress, RegisterLocator,
@@ -145,21 +146,21 @@ impl ToCommandBitmap for GPIOSelection {
 
 impl ToFullCommand for Register {
     /// Returns the precalculated full command
-    fn to_command(&self) -> [u8; 4] {
+    fn to_read_command(&self) -> [u8; 4] {
         match self {
-            Register::CellVoltageA => CMD_CELL_V_REG_A,
-            Register::CellVoltageB => CMD_CELL_V_REG_B,
-            Register::CellVoltageC => CMD_CELL_V_REG_C,
-            Register::CellVoltageD => CMD_CELL_V_REG_D,
-            Register::CellVoltageE => CMD_CELL_V_REG_E,
-            Register::AuxiliaryA => CMD_AUX_V_REG_A,
-            Register::AuxiliaryB => CMD_AUX_V_REG_B,
-            Register::AuxiliaryC => CMD_AUX_V_REG_C,
-            Register::AuxiliaryD => CMD_AUX_V_REG_D,
-            Register::StatusA => CMD_STATUS_A,
-            Register::StatusB => CMD_STATUS_B,
-            Register::ConfigurationA => CMD_CONF_A,
-            Register::ConfigurationB => CMD_CONF_B,
+            Register::CellVoltageA => CMD_R_CELL_V_REG_A,
+            Register::CellVoltageB => CMD_R_CELL_V_REG_B,
+            Register::CellVoltageC => CMD_R_CELL_V_REG_C,
+            Register::CellVoltageD => CMD_R_CELL_V_REG_D,
+            Register::CellVoltageE => CMD_R_CELL_V_REG_E,
+            Register::AuxiliaryA => CMD_R_AUX_V_REG_A,
+            Register::AuxiliaryB => CMD_R_AUX_V_REG_B,
+            Register::AuxiliaryC => CMD_R_AUX_V_REG_C,
+            Register::AuxiliaryD => CMD_R_AUX_V_REG_D,
+            Register::StatusA => CMD_R_STATUS_A,
+            Register::StatusB => CMD_R_STATUS_B,
+            Register::ConfigurationA => CMD_R_CONF_A,
+            Register::ConfigurationB => CMD_R_CONF_B,
         }
     }
 }
