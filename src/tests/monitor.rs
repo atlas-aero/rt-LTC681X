@@ -656,6 +656,36 @@ fn test_read_register_status_b() {
 }
 
 #[test]
+fn test_read_register_conf_a() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_0010, 0x2B, 0xA)
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_register(Register::ConfigurationA).unwrap();
+    assert_eq!(24970, result[0][0]);
+    assert_eq!(8033, result[0][1]);
+    assert_eq!(8655, result[0][2]);
+}
+
+#[test]
+fn test_read_register_conf_b() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0010_0110, 0x2C, 0xC8)
+        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
+
+    let result = monitor.read_register(Register::ConfigurationB).unwrap();
+    assert_eq!(24970, result[0][0]);
+    assert_eq!(8033, result[0][1]);
+    assert_eq!(8655, result[0][2]);
+}
+
+#[test]
 fn test_read_register_multiple_devices() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0000, 0b0000_1111, 0xF9, 0xA8)

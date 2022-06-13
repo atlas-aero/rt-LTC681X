@@ -33,3 +33,9 @@ pub static CMD_STATUS_A: [u8; 4] = [0x00, 0x10, 0xED, 0x72];
 
 /// Precomputed command for status register group B
 pub static CMD_STATUS_B: [u8; 4] = [0x00, 0x12, 0x70, 0x24];
+
+/// Precomputed command for configuration register group A
+pub static CMD_CONF_A: [u8; 4] = [0x00, 0x2, 0x2B, 0xA];
+
+/// Precomputed command for configuration register group B
+pub static CMD_CONF_B: [u8; 4] = [0x00, 0x26, 0x2C, 0xC8];

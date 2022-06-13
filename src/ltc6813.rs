@@ -67,6 +67,8 @@ pub enum Register {
     AuxiliaryD,
     StatusA,
     StatusB,
+    ConfigurationA,
+    ConfigurationB,
 }
 
 /// All conversion channels
@@ -161,6 +163,8 @@ impl ToFullCommand for Register {
             Register::AuxiliaryD => CMD_AUX_V_REG_D,
             Register::StatusA => CMD_STATUS_A,
             Register::StatusB => CMD_STATUS_B,
+            Register::ConfigurationA => CMD_CONF_A,
+            Register::ConfigurationB => CMD_CONF_B,
         }
     }
 }
@@ -180,6 +184,8 @@ impl GroupedRegisterIndex for Register {
             Register::AuxiliaryD => 3,
             Register::StatusA => 0,
             Register::StatusB => 1,
+            Register::ConfigurationA => 0,
+            Register::ConfigurationB => 1,
         }
     }
 }

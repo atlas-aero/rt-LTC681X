@@ -1,7 +1,7 @@
 //! Device-specific types for [LTC6812](<https://www.analog.com/en/products/ltc6812-1.html>)
 use crate::commands::{
     CMD_AUX_V_REG_A, CMD_AUX_V_REG_B, CMD_AUX_V_REG_C, CMD_AUX_V_REG_D, CMD_CELL_V_REG_A, CMD_CELL_V_REG_B,
-    CMD_CELL_V_REG_C, CMD_CELL_V_REG_D, CMD_CELL_V_REG_E, CMD_STATUS_A, CMD_STATUS_B,
+    CMD_CELL_V_REG_C, CMD_CELL_V_REG_D, CMD_CELL_V_REG_E, CMD_CONF_A, CMD_CONF_B, CMD_STATUS_A, CMD_STATUS_B,
 };
 use crate::monitor::{
     ChannelIndex, ChannelType, DeviceTypes, GroupedRegisterIndex, NoPolling, RegisterAddress, RegisterLocator,
@@ -67,6 +67,8 @@ pub enum Register {
     AuxiliaryD,
     StatusA,
     StatusB,
+    ConfigurationA,
+    ConfigurationB,
 }
 
 /// All conversion channels
@@ -156,6 +158,8 @@ impl ToFullCommand for Register {
             Register::AuxiliaryD => CMD_AUX_V_REG_D,
             Register::StatusA => CMD_STATUS_A,
             Register::StatusB => CMD_STATUS_B,
+            Register::ConfigurationA => CMD_CONF_A,
+            Register::ConfigurationB => CMD_CONF_B,
         }
     }
 }
@@ -174,6 +178,8 @@ impl GroupedRegisterIndex for Register {
             Register::AuxiliaryD => 3,
             Register::StatusA => 0,
             Register::StatusB => 1,
+            Register::ConfigurationA => 0,
+            Register::ConfigurationB => 1,
         }
     }
 }
