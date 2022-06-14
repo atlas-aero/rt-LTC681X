@@ -1,8 +1,8 @@
 //! Device-specific types for [LTC6813](<https://www.analog.com/en/products/ltc6813-1.html>)
 use crate::commands::*;
 use crate::monitor::{
-    ChannelIndex, ChannelType, DeviceTypes, GroupedRegisterIndex, NoPolling, RegisterAddress, RegisterLocator,
-    ToCommandBitmap, ToFullCommand, LTC681X,
+    ChannelIndex, ChannelType, DeviceTypes, GroupedRegisterIndex, NoPolling, NoWriteCommandError, RegisterAddress,
+    RegisterLocator, ToCommandBitmap, ToFullCommand, LTC681X,
 };
 use core::slice::Iter;
 use embedded_hal::blocking::spi::Transfer;
@@ -165,6 +165,14 @@ impl ToFullCommand for Register {
             Register::StatusB => CMD_R_STATUS_B,
             Register::ConfigurationA => CMD_R_CONF_A,
             Register::ConfigurationB => CMD_R_CONF_B,
+        }
+    }
+
+    fn to_write_command(&self) -> Result<[u8; 4], NoWriteCommandError> {
+        match self {
+            Register::ConfigurationA => Ok(CMD_W_CONF_A),
+            Register::ConfigurationB => Ok(CMD_W_CONF_B),
+            _ => Err(NoWriteCommandError {}),
         }
     }
 }

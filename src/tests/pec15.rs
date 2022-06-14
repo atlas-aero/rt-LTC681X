@@ -18,11 +18,17 @@ fn test_pec15_two_bytes() {
     // Status register group B
     assert_eq!([0x70, 0x24], PEC15::calc(&[0x0, 0x12]));
 
-    // Configuration register group A
+    // Read Configuration register group A
     assert_eq!([0x2B, 0xA], PEC15::calc(&[0x0, 0x2]));
 
-    // Configuration register group B
+    // Read Configuration register group B
     assert_eq!([0x2C, 0xC8], PEC15::calc(&[0x0, 0x26]));
+
+    // Write Configuration register group A
+    assert_eq!([0x3D, 0x6E], PEC15::calc(&[0x0, 0x1]));
+
+    // Write Configuration register group B
+    assert_eq!([0xB1, 0x9E], PEC15::calc(&[0x0, 0x24]));
 }
 
 #[test]

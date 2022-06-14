@@ -764,6 +764,113 @@ fn test_read_register_transfer_error() {
 }
 
 #[test]
+fn test_write_register_conf_a() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
+        .expect_register_write(&[
+            0b1111_1000,
+            0b0000_0100,
+            0b0000_1000,
+            0b0001_0000,
+            0b0010_0000,
+            0b0100_0000,
+            0xB,
+            0x24,
+        ])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
+
+    let mut data = [0x0; 6];
+    data[0] = 0b1111_1000;
+    data[1] = 0b0000_0100;
+    data[2] = 0b0000_1000;
+    data[3] = 0b0001_0000;
+    data[4] = 0b0010_0000;
+    data[5] = 0b0100_0000;
+
+    monitor.write_register(Register::ConfigurationA, [data]).unwrap();
+}
+
+#[test]
+fn test_write_register_conf_b() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0010_0100, 0xB1, 0x9E)
+        .expect_register_write(&[
+            0b0000_0001,
+            0b0000_0110,
+            0b0000_1000,
+            0b0011_0000,
+            0b0010_1000,
+            0b0100_1000,
+            0x43,
+            0x50,
+        ])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
+
+    let mut data = [0x0; 6];
+    data[0] = 0b0000_0001;
+    data[1] = 0b0000_0110;
+    data[2] = 0b0000_1000;
+    data[3] = 0b0011_0000;
+    data[4] = 0b0010_1000;
+    data[5] = 0b0100_1000;
+
+    monitor.write_register(Register::ConfigurationB, [data]).unwrap();
+}
+
+#[test]
+fn test_write_register_multiple_devices() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0010_0100, 0xB1, 0x9E)
+        .expect_register_write(&[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x22, 0xEE])
+        .expect_register_write(&[0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0x28, 0xC0])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 2> = LTC681X::ltc6813(bus, get_cs_no_polling(1));
+
+    let data1 = [0x1, 0x2, 0x3, 0x4, 0x5, 0x6];
+    let data2 = [0x7, 0x8, 0x9, 0xA, 0xB, 0xC];
+
+    monitor.write_register(Register::ConfigurationB, [data1, data2]).unwrap();
+}
+
+#[test]
+fn test_write_register_cs_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Err(PinError::Error1));
+
+    let bus = MockSPIBus::new();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.write_register(Register::ConfigurationA, [[0x0; 6]]);
+    match result.unwrap_err() {
+        Error::CSPinError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_write_register_transfer_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let mut bus = MockSPIBus::new();
+    bus.expect_transfer().times(1).returning(move |_| Err(BusError::Error1));
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.write_register(Register::ConfigurationA, [[0x0; 6]]);
+    match result.unwrap_err() {
+        Error::TransferError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
 fn test_read_voltages_cell_group_1() {
     let bus = BusMockBuilder::new()
         // Register A
