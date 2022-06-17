@@ -1,3 +1,65 @@
+//! # Device configuration
+//!
+//! Instead of directly writing do configuration registers, the client offers a generic abstraction.
+//!
+//! ## Example
+//!
+//! For full details s. [Configuration] struct.
+//!
+//! ````
+//! use ltc681x::config::{Cell, Configuration};
+//! use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//! use ltc681x::ltc6813::LTC6813;
+//! use ltc681x::monitor::{LTC681X, LTC681XClient};
+//!
+//! // Single LTC6813 device
+//! let spi_bus = ExampleSPIBus::default();
+//! let cs_pin = ExampleCSPin{};
+//! let mut client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus, cs_pin);
+//!
+//! let mut config = Configuration::default();
+//!
+//! // Set over-voltage limit to 4.25 V
+//! config.set_ov_comp_voltage(4_250_000).unwrap();
+//!
+//! // Sets under-voltage limit to 3.0 V
+//! config.set_uv_comp_voltage(3_000_000).unwrap();
+//!
+//! // Turn on discharge switch for cell 6 and 9
+//! config.discharge_cell(Cell::Cell6);
+//! config.discharge_cell(Cell::Cell9);
+//!
+//! client.write_configuration([config]).unwrap();
+//! ````
+//!
+//! ## Multiple devices in daisy-chain
+//!
+//! Writing to multiple devices in daisy-chain is supported, by providing an array item per device:
+//! ````
+//!# use ltc681x::config::{Cell, Configuration};
+//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::ltc6813::LTC6813;
+//!# use ltc681x::monitor::{LTC681X, LTC681XClient};
+//!#
+//!# // Single LTC6813 device
+//!# let spi_bus = ExampleSPIBus::default();
+//!# let cs_pin = ExampleCSPin{};
+//! // 3 devices in daisy chain
+//! let mut client: LTC681X<_, _, _, LTC6813, 3> = LTC681X::ltc6813(spi_bus, cs_pin);
+//!
+//! let mut config = [
+//!     Configuration::default(),
+//!     Configuration::default(),
+//!     Configuration::default()
+//! ];
+//!
+//! config[0].set_ov_comp_voltage(4_100_000);
+//! config[1].set_ov_comp_voltage(4_200_000);
+//! config[2].set_ov_comp_voltage(4_300_000);
+//!
+//! client.write_configuration(config).unwrap();
+//! ````
+//!
 use core::fmt::{Display, Formatter};
 
 /// Abstracted configuration of configuration register(s)
@@ -150,22 +212,22 @@ impl Configuration {
         }
     }
 
-    /// References Remain Powered Up Until Watchdog Timeout
+    /// References remain powered up until watchdog timeout
     pub fn enable_reference_power(&mut self) {
         self.register_a[0] |= 0b0000_0100
     }
 
-    /// References Shut Down After Conversions (Default)
+    /// References shut down after conversions (Default)
     pub fn disable_reference_power(&mut self) {
         self.register_a[0] &= 0b1111_1011
     }
 
-    /// Enables the Discharge Timer for Discharge Switches
+    /// Enables the discharge timer for discharge switches
     pub fn enable_discharge_timer(&mut self) {
         self.register_a[0] |= 0b0000_0010
     }
 
-    /// Disables Discharge Timer
+    /// Disables the discharge timer
     pub fn disable_discharge_timer(&mut self) {
         self.register_a[0] &= 0b1111_1101
     }
