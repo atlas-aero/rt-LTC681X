@@ -877,7 +877,7 @@ fn test_write_configuration_correct_data() {
         .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
         .expect_register_write(&[
             0b1111_1000,
-            0b1010_010,
+            0b0101_0010,
             0b1111_0111,
             0b1010_0111,
             0b0000_0000,
@@ -983,7 +983,7 @@ fn test_write_configuration_ltc6810() {
         .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
         .expect_register_write(&[
             0b1111_1000,
-            0b1010_010,
+            0b0101_0010,
             0b1111_0111,
             0b1010_0111,
             0b0000_0000,
