@@ -1,11 +1,12 @@
 //! Device-specific types for [LTC6812](<https://www.analog.com/en/products/ltc6812-1.html>)
 use crate::commands::{
-    CMD_AUX_V_REG_A, CMD_AUX_V_REG_B, CMD_AUX_V_REG_C, CMD_AUX_V_REG_D, CMD_CELL_V_REG_A, CMD_CELL_V_REG_B,
-    CMD_CELL_V_REG_C, CMD_CELL_V_REG_D, CMD_CELL_V_REG_E, CMD_STATUS_A, CMD_STATUS_B,
+    CMD_R_AUX_V_REG_A, CMD_R_AUX_V_REG_B, CMD_R_AUX_V_REG_C, CMD_R_AUX_V_REG_D, CMD_R_CELL_V_REG_A, CMD_R_CELL_V_REG_B,
+    CMD_R_CELL_V_REG_C, CMD_R_CELL_V_REG_D, CMD_R_CELL_V_REG_E, CMD_R_CONF_A, CMD_R_CONF_B, CMD_R_STATUS_A,
+    CMD_R_STATUS_B, CMD_W_CONF_A, CMD_W_CONF_B,
 };
 use crate::monitor::{
-    ChannelIndex, ChannelType, DeviceTypes, GroupedRegisterIndex, NoPolling, RegisterAddress, RegisterLocator,
-    ToCommandBitmap, ToFullCommand, LTC681X,
+    ChannelIndex, ChannelType, DeviceTypes, GroupedRegisterIndex, NoPolling, NoWriteCommandError, RegisterAddress,
+    RegisterLocator, ToCommandBitmap, ToFullCommand, LTC681X,
 };
 use core::slice::Iter;
 use embedded_hal::blocking::spi::Transfer;
@@ -67,6 +68,8 @@ pub enum Register {
     AuxiliaryD,
     StatusA,
     StatusB,
+    ConfigurationA,
+    ConfigurationB,
 }
 
 /// All conversion channels
@@ -116,6 +119,9 @@ impl DeviceTypes for LTC6812 {
 
     const REG_STATUS_A: Self::Register = Register::StatusA;
     const REG_STATUS_B: Self::Register = Register::StatusB;
+
+    const REG_CONF_A: Self::Register = Register::ConfigurationA;
+    const REG_CONF_B: Option<Self::Register> = Some(Register::ConfigurationB);
 }
 
 impl<B, CS, const L: usize> LTC681X<B, CS, NoPolling, LTC6812, L>
@@ -143,19 +149,29 @@ impl ToCommandBitmap for GPIOSelection {
 
 impl ToFullCommand for Register {
     /// Returns the precalculated full command
-    fn to_command(&self) -> [u8; 4] {
+    fn to_read_command(&self) -> [u8; 4] {
         match self {
-            Register::CellVoltageA => CMD_CELL_V_REG_A,
-            Register::CellVoltageB => CMD_CELL_V_REG_B,
-            Register::CellVoltageC => CMD_CELL_V_REG_C,
-            Register::CellVoltageD => CMD_CELL_V_REG_D,
-            Register::CellVoltageE => CMD_CELL_V_REG_E,
-            Register::AuxiliaryA => CMD_AUX_V_REG_A,
-            Register::AuxiliaryB => CMD_AUX_V_REG_B,
-            Register::AuxiliaryC => CMD_AUX_V_REG_C,
-            Register::AuxiliaryD => CMD_AUX_V_REG_D,
-            Register::StatusA => CMD_STATUS_A,
-            Register::StatusB => CMD_STATUS_B,
+            Register::CellVoltageA => CMD_R_CELL_V_REG_A,
+            Register::CellVoltageB => CMD_R_CELL_V_REG_B,
+            Register::CellVoltageC => CMD_R_CELL_V_REG_C,
+            Register::CellVoltageD => CMD_R_CELL_V_REG_D,
+            Register::CellVoltageE => CMD_R_CELL_V_REG_E,
+            Register::AuxiliaryA => CMD_R_AUX_V_REG_A,
+            Register::AuxiliaryB => CMD_R_AUX_V_REG_B,
+            Register::AuxiliaryC => CMD_R_AUX_V_REG_C,
+            Register::AuxiliaryD => CMD_R_AUX_V_REG_D,
+            Register::StatusA => CMD_R_STATUS_A,
+            Register::StatusB => CMD_R_STATUS_B,
+            Register::ConfigurationA => CMD_R_CONF_A,
+            Register::ConfigurationB => CMD_R_CONF_B,
+        }
+    }
+
+    fn to_write_command(&self) -> Result<[u8; 4], NoWriteCommandError> {
+        match self {
+            Register::ConfigurationA => Ok(CMD_W_CONF_A),
+            Register::ConfigurationB => Ok(CMD_W_CONF_B),
+            _ => Err(NoWriteCommandError {}),
         }
     }
 }
@@ -174,6 +190,8 @@ impl GroupedRegisterIndex for Register {
             Register::AuxiliaryD => 3,
             Register::StatusA => 0,
             Register::StatusB => 1,
+            Register::ConfigurationA => 0,
+            Register::ConfigurationB => 1,
         }
     }
 }

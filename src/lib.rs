@@ -8,6 +8,7 @@
 //! * [Multiple devices in daisy chain](crate::monitor#multiple-devices-in-daisy-chain)
 //! * [ADC status polling (SDO line method)](crate::monitor#polling)
 //! * [Mapping voltages to GPIO and cell groups](crate::monitor#mapping-voltages)
+//! * [Abstracted device configuration](crate::config)
 //! * [Overlapping ADC measurement](crate::monitor#overlap-measurement-adol-command)
 //! * [Internal device parameters measurement](crate::monitor#internal-device-parameters-adstat-command)
 //!
@@ -45,6 +46,7 @@
 
 extern crate alloc;
 
+pub mod config;
 #[cfg(feature = "example")]
 pub mod example;
 pub mod ltc6810;

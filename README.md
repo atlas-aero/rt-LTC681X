@@ -12,6 +12,7 @@ Currently, the following features are implemented:
  * [Multiple devices in daisy chain](https://docs.rs/ltc681x/latest/ltc681x/monitor/index.html#multiple-devices-in-daisy-chain)
  * [ADC status polling (SDO line method)](https://docs.rs/ltc681x/latest/ltc681x/monitor/index.html#polling)
  * [Mapping voltages to GPIO and cell groups](https://docs.rs/ltc681x/latest/ltc681x/monitor/index.html#mapping-voltages)
+ * [Abstracted device configuration](https://docs.rs/ltc681x/latest/ltc681x/config/index.html)
  * [Overlapping ADC measurement](https://docs.rs/ltc681x/latest/ltc681x/monitor/index.html#overlap-measurement-adol-command)
  * [Internal device parameters measurement](https://docs.rs/ltc681x/latest/ltc681x/monitor/index.html#internal-device-parameters-adstat-command)
 

@@ -1,10 +1,11 @@
 //! Device-specific types for [LTC6810](<https://www.analog.com/en/products/ltc6810-1.html>)
 use crate::commands::{
-    CMD_AUX_V_REG_A, CMD_AUX_V_REG_B, CMD_CELL_V_REG_A, CMD_CELL_V_REG_B, CMD_STATUS_A, CMD_STATUS_B,
+    CMD_R_AUX_V_REG_A, CMD_R_AUX_V_REG_B, CMD_R_CELL_V_REG_A, CMD_R_CELL_V_REG_B, CMD_R_CONF_A, CMD_R_STATUS_A,
+    CMD_R_STATUS_B, CMD_W_CONF_A,
 };
 use crate::monitor::{
-    ChannelIndex, ChannelType, DeviceTypes, GroupedRegisterIndex, NoPolling, RegisterAddress, RegisterLocator,
-    ToCommandBitmap, ToFullCommand, LTC681X,
+    ChannelIndex, ChannelType, DeviceTypes, GroupedRegisterIndex, NoPolling, NoWriteCommandError, RegisterAddress,
+    RegisterLocator, ToCommandBitmap, ToFullCommand, LTC681X,
 };
 use core::slice::Iter;
 use embedded_hal::blocking::spi::Transfer;
@@ -51,6 +52,7 @@ pub enum Register {
     AuxiliaryB,
     StatusA,
     StatusB,
+    Configuration,
 }
 
 /// All conversion channels
@@ -87,6 +89,9 @@ impl DeviceTypes for LTC6810 {
 
     const REG_STATUS_A: Self::Register = Register::StatusA;
     const REG_STATUS_B: Self::Register = Register::StatusB;
+
+    const REG_CONF_A: Self::Register = Register::Configuration;
+    const REG_CONF_B: Option<Self::Register> = None;
 }
 
 impl<B, CS, const L: usize> LTC681X<B, CS, NoPolling, LTC6810, L>
@@ -114,14 +119,22 @@ impl ToCommandBitmap for GPIOSelection {
 
 impl ToFullCommand for Register {
     /// Returns the precalculated full command
-    fn to_command(&self) -> [u8; 4] {
+    fn to_read_command(&self) -> [u8; 4] {
         match self {
-            Register::CellVoltageA => CMD_CELL_V_REG_A,
-            Register::CellVoltageB => CMD_CELL_V_REG_B,
-            Register::AuxiliaryA => CMD_AUX_V_REG_A,
-            Register::AuxiliaryB => CMD_AUX_V_REG_B,
-            Register::StatusA => CMD_STATUS_A,
-            Register::StatusB => CMD_STATUS_B,
+            Register::CellVoltageA => CMD_R_CELL_V_REG_A,
+            Register::CellVoltageB => CMD_R_CELL_V_REG_B,
+            Register::AuxiliaryA => CMD_R_AUX_V_REG_A,
+            Register::AuxiliaryB => CMD_R_AUX_V_REG_B,
+            Register::StatusA => CMD_R_STATUS_A,
+            Register::StatusB => CMD_R_STATUS_B,
+            Register::Configuration => CMD_R_CONF_A,
+        }
+    }
+
+    fn to_write_command(&self) -> Result<[u8; 4], NoWriteCommandError> {
+        match self {
+            Register::Configuration => Ok(CMD_W_CONF_A),
+            _ => Err(NoWriteCommandError {}),
         }
     }
 }
@@ -135,6 +148,7 @@ impl GroupedRegisterIndex for Register {
             Register::AuxiliaryB => 1,
             Register::StatusA => 0,
             Register::StatusB => 1,
+            Register::Configuration => 0,
         }
     }
 }

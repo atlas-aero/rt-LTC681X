@@ -65,6 +65,15 @@ impl BusMockBuilder {
         self
     }
 
+    pub fn expect_register_write(mut self, expected: &'static [u8; 8]) -> Self {
+        self.bus.expect_transfer().times(1).returning(move |data| {
+            assert_eq!(expected, data);
+            Ok(&[0xff; 8])
+        });
+
+        self
+    }
+
     pub fn into_mock(self) -> MockSPIBus {
         self.bus
     }
