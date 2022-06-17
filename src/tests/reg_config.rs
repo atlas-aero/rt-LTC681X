@@ -487,6 +487,34 @@ fn test_enable_discharge_monitor() {
     assert_default(7, &config);
 }
 
+#[test]
+fn test_eq_false_register_a() {
+    let mut a = Configuration::default();
+    let b = Configuration::default();
+
+    a.discharge_cell(Cell::Cell1);
+    assert_ne!(a, b);
+}
+
+#[test]
+fn test_eq_false_register_b() {
+    let mut a = Configuration::default();
+    let b = Configuration::default();
+
+    a.discharge_cell(Cell::Cell18);
+    assert_ne!(a, b);
+}
+
+#[test]
+fn test_eq_true() {
+    let mut a = Configuration::default();
+    let mut b = Configuration::default();
+
+    a.set_ov_comp_voltage(4_200_000).unwrap();
+    b.set_ov_comp_voltage(4_200_000).unwrap();
+    assert_eq!(a, b);
+}
+
 /// Asserts that all register slots, except one, match the default values
 fn assert_default(except: usize, config: &Configuration) {
     let mut actual = [0u8; 12];

@@ -333,6 +333,14 @@ impl Configuration {
     }
 }
 
+impl PartialEq<Self> for Configuration {
+    fn eq(&self, other: &Self) -> bool {
+        self.register_a == other.register_a && self.register_b == other.register_b
+    }
+}
+
+impl Eq for Configuration {}
+
 impl From<usize> for Cell {
     fn from(index: usize) -> Self {
         match index {
