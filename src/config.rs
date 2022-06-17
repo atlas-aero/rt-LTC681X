@@ -98,7 +98,7 @@ impl Default for Configuration {
 /// GPIO pins of LTC681X device.
 /// Depending on the device type, not all pins may be available.
 /// Configuring a pin that is not physically available has no effect.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum GPIO {
     GPIO1,
     GPIO2,
@@ -114,7 +114,7 @@ pub enum GPIO {
 /// Cell indexes of the LTC681X device.
 /// Depending on the device type, not all cells may be available.
 /// Configuring a cell that is not physically available has no effect.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Cell {
     Cell1,
     Cell2,
@@ -137,7 +137,7 @@ pub enum Cell {
 }
 
 /// Timeout duration for discharge timer
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum DischargeTimeout {
     Disabled = 0x0,
     HalfMinute = 0x1,
@@ -330,5 +330,48 @@ impl Configuration {
     /// timer function will be enabled if the DTEN pin is asserted
     pub fn enable_discharge_monitor(&mut self) {
         self.register_b[1] |= 0b0000_1000;
+    }
+}
+
+impl From<usize> for Cell {
+    fn from(index: usize) -> Self {
+        match index {
+            0 => Cell::Cell1,
+            1 => Cell::Cell2,
+            2 => Cell::Cell3,
+            3 => Cell::Cell4,
+            4 => Cell::Cell5,
+            5 => Cell::Cell6,
+            6 => Cell::Cell7,
+            7 => Cell::Cell8,
+            8 => Cell::Cell9,
+            9 => Cell::Cell10,
+            10 => Cell::Cell11,
+            11 => Cell::Cell12,
+            12 => Cell::Cell13,
+            13 => Cell::Cell14,
+            14 => Cell::Cell15,
+            15 => Cell::Cell16,
+            16 => Cell::Cell17,
+            17 => Cell::Cell18,
+            _ => Cell::Cell1,
+        }
+    }
+}
+
+impl From<usize> for GPIO {
+    fn from(index: usize) -> Self {
+        match index {
+            0 => GPIO::GPIO1,
+            1 => GPIO::GPIO2,
+            2 => GPIO::GPIO3,
+            3 => GPIO::GPIO4,
+            4 => GPIO::GPIO5,
+            5 => GPIO::GPIO6,
+            6 => GPIO::GPIO7,
+            7 => GPIO::GPIO8,
+            8 => GPIO::GPIO9,
+            _ => GPIO::GPIO1,
+        }
     }
 }
