@@ -240,6 +240,7 @@
 //! // Digital power supply voltage in uV => 5.12 V
 //! assert_eq!(5_120_000, data[0].digital_power);
 //! ````
+use crate::config::Configuration;
 use crate::monitor::Error::TransferError;
 use crate::pec15::PEC15;
 use core::fmt::{Debug, Display, Formatter};
@@ -464,6 +465,12 @@ pub trait DeviceTypes: Send + Sync + Sized + 'static {
 
     /// Status group b register
     const REG_STATUS_B: Self::Register;
+
+    /// Configuration register A
+    const REG_CONF_A: Self::Register;
+
+    /// Configuration register B, None in case device type has no second configuration register
+    const REG_CONF_B: Option<Self::Register>;
 }
 
 /// Public LTC681X client interface
@@ -513,6 +520,9 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     /// Writes the values of the given register
     /// One 3-bytes array per device in daisy chain
     fn write_register(&mut self, register: T::Register, data: [[u8; 6]; L]) -> Result<(), Self::Error>;
+
+    /// Writes the configuration, one array item per device in daisy chain
+    fn write_configuration(&mut self, config: [Configuration; L]) -> Result<(), Self::Error>;
 
     /// Reads and returns the conversion result (voltages) of Cell or GPIO group
     /// Returns one vector for each device in daisy chain
@@ -675,6 +685,25 @@ where
         }
 
         self.cs.set_high().map_err(Error::CSPinError)?;
+        Ok(())
+    }
+
+    /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.write_configuration)
+    fn write_configuration(&mut self, config: [Configuration; L]) -> Result<(), Self::Error> {
+        let mut register_a = [[0x0u8; 6]; L];
+        let mut register_b = [[0x0u8; 6]; L];
+
+        for item in config.iter().enumerate() {
+            register_a[item.0] = item.1.register_a;
+            register_b[item.0] = item.1.register_b;
+        }
+
+        self.write_register(T::REG_CONF_A, register_a)?;
+
+        if let Some(register) = T::REG_CONF_B {
+            self.write_register(register, register_b)?;
+        }
+
         Ok(())
     }
 

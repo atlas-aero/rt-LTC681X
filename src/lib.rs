@@ -45,6 +45,7 @@
 
 extern crate alloc;
 
+pub mod config;
 #[cfg(feature = "example")]
 pub mod example;
 pub mod ltc6810;

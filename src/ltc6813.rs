@@ -122,6 +122,9 @@ impl DeviceTypes for LTC6813 {
 
     const REG_STATUS_A: Self::Register = Register::StatusA;
     const REG_STATUS_B: Self::Register = Register::StatusB;
+
+    const REG_CONF_A: Self::Register = Register::ConfigurationA;
+    const REG_CONF_B: Option<Self::Register> = Some(Register::ConfigurationB);
 }
 
 impl<B, CS, const L: usize> LTC681X<B, CS, NoPolling, LTC6813, L>

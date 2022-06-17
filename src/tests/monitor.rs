@@ -1,4 +1,5 @@
 //! Tests for generic, device type independent, logic
+use crate::config::{Cell, Configuration, GPIO};
 use crate::ltc6813::{CellSelection, Channel, GPIOSelection, Register};
 use crate::mocks::{BusError, BusMockBuilder, MockPin, MockSPIBus, PinError};
 use crate::monitor::{ADCMode, Error, LTC681XClient, PollClient, StatusGroup, LTC681X};
@@ -864,6 +865,172 @@ fn test_write_register_transfer_error() {
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
 
     let result = monitor.write_register(Register::ConfigurationA, [[0x0; 6]]);
+    match result.unwrap_err() {
+        Error::TransferError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_write_configuration_correct_data() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
+        .expect_register_write(&[
+            0b1111_1000,
+            0b1010_010,
+            0b1111_0111,
+            0b1010_0111,
+            0b0000_0000,
+            0b0000_0000,
+            0x10,
+            0x6C,
+        ])
+        .expect_command(0b0000_0000, 0b0010_0100, 0xB1, 0x9E)
+        .expect_register_write(&[
+            0b0001_1111,
+            0b0000_0001,
+            0b0000_0000,
+            0b0000_0000,
+            0b0000_0000,
+            0b0000_0000,
+            0x2,
+            0x5C,
+        ])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(2));
+
+    let mut config = Configuration::default();
+    config.set_ov_comp_voltage(4_300_000).unwrap();
+    config.set_uv_comp_voltage(3_000_000).unwrap();
+    config.discharge_cell(Cell::Cell13);
+    config.discharge_cell(Cell::Cell17);
+
+    monitor.write_configuration([config]).unwrap();
+}
+
+#[test]
+fn test_write_configuration_multiple_devices() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
+        .expect_register_write(&[
+            0b1111_1000,
+            0b1110_0001,
+            0b0100_0100,
+            0b1001_1100,
+            0b0000_0000,
+            0b0000_1000,
+            0x66,
+            0xE0,
+        ])
+        .expect_register_write(&[
+            0b1010_1000,
+            0b0000_0000,
+            0b0000_0000,
+            0b0000_0000,
+            0b0011_1000,
+            0b0000_0000,
+            0x72,
+            0x5E,
+        ])
+        .expect_command(0b0000_0000, 0b0010_0100, 0xB1, 0x9E)
+        .expect_register_write(&[
+            0b0000_1111,
+            0b0000_0010,
+            0b0000_0000,
+            0b0000_0000,
+            0b0000_0000,
+            0b0000_0000,
+            0xA,
+            0xFA,
+        ])
+        .expect_register_write(&[
+            0b0110_1101,
+            0b0000_0000,
+            0b0000_0000,
+            0b0000_0000,
+            0b0000_0000,
+            0b0000_0000,
+            0x13,
+            0xD6,
+        ])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 2> = LTC681X::ltc6813(bus, get_cs_no_polling(2));
+
+    let mut config1 = Configuration::default();
+    config1.set_ov_comp_voltage(4_000_000).unwrap();
+    config1.set_uv_comp_voltage(2_000_000).unwrap();
+    config1.discharge_cell(Cell::Cell12);
+    config1.discharge_cell(Cell::Cell18);
+
+    let mut config2 = Configuration::default();
+    config2.enable_gpio_pull_down(GPIO::GPIO2);
+    config2.enable_gpio_pull_down(GPIO::GPIO4);
+    config2.enable_gpio_pull_down(GPIO::GPIO7);
+    config2.discharge_cell(Cell::Cell4);
+    config2.discharge_cell(Cell::Cell5);
+    config2.discharge_cell(Cell::Cell6);
+    config2.discharge_cell(Cell::Cell14);
+    config2.discharge_cell(Cell::Cell15);
+
+    monitor.write_configuration([config1, config2]).unwrap();
+}
+
+#[test]
+fn test_write_configuration_ltc6810() {
+    let bus = BusMockBuilder::new()
+        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
+        .expect_register_write(&[
+            0b1111_1000,
+            0b1010_010,
+            0b1111_0111,
+            0b1010_0111,
+            0b0000_0000,
+            0b0000_0000,
+            0x10,
+            0x6C,
+        ])
+        .into_mock();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6810(bus, get_cs_no_polling(1));
+
+    let mut config = Configuration::default();
+    config.set_ov_comp_voltage(4_300_000).unwrap();
+    config.set_uv_comp_voltage(3_000_000).unwrap();
+    config.discharge_cell(Cell::Cell13);
+    config.discharge_cell(Cell::Cell17);
+
+    monitor.write_configuration([config]).unwrap();
+}
+
+#[test]
+fn test_write_configuration_cs_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Err(PinError::Error1));
+
+    let bus = MockSPIBus::new();
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.write_configuration([Configuration::default()]);
+    match result.unwrap_err() {
+        Error::CSPinError(_) => {}
+        _ => panic!("Unexpected error type"),
+    }
+}
+
+#[test]
+fn test_write_configuration_transfer_error() {
+    let mut cs = MockPin::new();
+    cs.expect_set_low().times(1).returning(move || Ok(()));
+
+    let mut bus = MockSPIBus::new();
+    bus.expect_transfer().times(1).returning(move |_| Err(BusError::Error1));
+
+    let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, cs);
+
+    let result = monitor.write_configuration([Configuration::default()]);
     match result.unwrap_err() {
         Error::TransferError(_) => {}
         _ => panic!("Unexpected error type"),
