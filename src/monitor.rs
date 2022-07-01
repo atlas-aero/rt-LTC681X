@@ -361,9 +361,6 @@ pub enum Error<B: Transfer<u8>, CS: OutputPin> {
     /// PEC checksum of returned data was invalid
     ChecksumMismatch,
 
-    /// Read temperature was to high for fitting in signed 16-Bit integer (> 431 °C)
-    TemperatureOverflow,
-
     /// Writing to to the given register is not supported
     ReadOnlyRegister,
 }
@@ -429,6 +426,7 @@ pub struct InternalDeviceParameters {
     pub digital_power: u32,
 
     /// Die temperature in °C as fixed-point number
+    /// In case register value overflows 16-bit integer, this value is set to I16F16::MAX (32767.99998)
     pub temperature: I16F16,
 }
 
@@ -785,24 +783,7 @@ where
         let mut parameters = Vec::new();
 
         for device_index in 0..L {
-            let temp_raw = status_a[device_index][1];
-
-            if temp_raw >= 53744 {
-                return Err(Error::TemperatureOverflow);
-            }
-
-            // Constant of 276 °C, which needs to be subtracted
-            const TEMP_SUB: i16 = 20976;
-
-            // Check if temperature is negative
-            let temp_i32: i16 = if temp_raw >= TEMP_SUB as u16 {
-                temp_raw as i16 - TEMP_SUB
-            } else {
-                0 - TEMP_SUB + temp_raw as i16
-            };
-
-            // Applying factor 100 uV/7.6 mV
-            let temp_fixed = I16F16::from_num(temp_i32) / 76;
+            let temp_fixed = self.calc_temperature(status_a[device_index][1]);
 
             let _ = parameters.push(InternalDeviceParameters {
                 total_voltage: status_a[device_index][0] as u32 * 30 * 100,
@@ -879,6 +860,26 @@ where
             device_types: PhantomData,
         }
     }
+
+    /// Calculates the temperature in °C based on raw register value
+    fn calc_temperature(&self, value: u16) -> I16F16 {
+        if value >= 53744 {
+            return I16F16::MAX;
+        }
+
+        // Constant of 276 °C, which needs to be subtracted
+        const TEMP_SUB: i16 = 20976;
+
+        // Check if temperature is negative
+        let temp_i32: i16 = if value >= TEMP_SUB as u16 {
+            value as i16 - TEMP_SUB
+        } else {
+            0 - TEMP_SUB + value as i16
+        };
+
+        // Applying factor 100 uV/7.6 mV
+        I16F16::from_num(temp_i32) / 76
+    }
 }
 
 impl<B, CS, T, const L: usize> PollClient for LTC681X<B, CS, SDOLinePolling, T, L>
@@ -910,7 +911,6 @@ impl<B: Transfer<u8>, CS: OutputPin> Debug for Error<B, CS> {
             Error::TransferError(_) => f.debug_struct("TransferError").finish(),
             Error::CSPinError(_) => f.debug_struct("CSPinError").finish(),
             Error::ChecksumMismatch => f.debug_struct("ChecksumMismatch").finish(),
-            Error::TemperatureOverflow => f.debug_struct("TemperatureOverflow").finish(),
             Error::ReadOnlyRegister => f.debug_struct("ReadOnlyRegister").finish(),
         }
     }

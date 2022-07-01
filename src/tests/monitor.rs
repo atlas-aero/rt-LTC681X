@@ -1730,11 +1730,9 @@ fn test_ltc6813_read_internal_device_parameters_temp_overflow() {
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(2));
 
-    let result = monitor.read_internal_device_parameters();
-    match result.unwrap_err() {
-        Error::TemperatureOverflow => {}
-        _ => panic!("Unexpected error type"),
-    }
+    let result = monitor.read_internal_device_parameters().unwrap();
+    assert_eq!(1, result.len());
+    assert_eq!("32767.99998", result[0].temperature.to_string());
 }
 
 #[test]
