@@ -261,7 +261,9 @@
 //!
 //! ## Internal device parameters (ADSTAT command)
 //!
-//! Measuring internal device parameters and reading the results:
+//! Measuring internal device parameters and reading the results.
+//!
+//! The expected execution time is returned as [CommandTime], see [command timing of cell conversion](#conversion-time) as example.
 //! ````
 //!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
 //!# use ltc681x::ltc6813::{CellSelection, LTC6813};
@@ -349,6 +351,28 @@ pub enum StatusGroup {
 impl ToCommandBitmap for StatusGroup {
     fn to_bitmap(&self) -> u16 {
         *self as u16
+    }
+}
+
+impl ToCommandTiming for StatusGroup {
+    fn to_conv_command_timing(&self, mode: ADCMode) -> CommandTime {
+        match self {
+            StatusGroup::All => match mode {
+                ADCMode::Fast => CommandTime::new(742, 858),
+                ADCMode::Normal => CommandTime::new(1_600, 2_000),
+                ADCMode::Filtered => CommandTime::new(134_000, 3_000),
+                ADCMode::Other => CommandTime::new(8_500, 4_800),
+            },
+            StatusGroup::CellSum
+            | StatusGroup::Temperature
+            | StatusGroup::AnalogVoltage
+            | StatusGroup::DigitalVoltage => match mode {
+                ADCMode::Fast => CommandTime::new(200, 229),
+                ADCMode::Normal => CommandTime::new(403, 520),
+                ADCMode::Filtered => CommandTime::new(34_000, 753),
+                ADCMode::Other => CommandTime::new(2_100, 1_200),
+            },
+        }
     }
 }
 
@@ -579,7 +603,7 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     ///
     /// * `mode`: ADC mode
     /// * `group`: Selection of status parameter to measure
-    fn measure_internal_parameters(&mut self, mode: ADCMode, group: StatusGroup) -> Result<(), Self::Error>;
+    fn measure_internal_parameters(&mut self, mode: ADCMode, group: StatusGroup) -> Result<CommandTime, Self::Error>;
 
     /// Reads the values of the given register
     /// Returns one array for each device in daisy chain
@@ -724,7 +748,7 @@ where
     }
 
     /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.measure_internal_parameters)
-    fn measure_internal_parameters(&mut self, mode: ADCMode, group: StatusGroup) -> Result<(), Error<B, CS>> {
+    fn measure_internal_parameters(&mut self, mode: ADCMode, group: StatusGroup) -> Result<CommandTime, Error<B, CS>> {
         self.cs.set_low().map_err(Error::CSPinError)?;
         let mut command: u16 = 0b0000_0100_0110_1000;
 
@@ -732,7 +756,9 @@ where
         command |= group.to_bitmap();
 
         self.send_command(command).map_err(Error::TransferError)?;
-        self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
+        self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)?;
+
+        Ok(group.to_conv_command_timing(mode))
     }
 
     /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_register)

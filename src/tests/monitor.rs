@@ -330,12 +330,23 @@ fn test_measure_internal_parameters_acc_modes() {
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(4));
-    monitor.measure_internal_parameters(ADCMode::Normal, StatusGroup::All).unwrap();
-    monitor.measure_internal_parameters(ADCMode::Fast, StatusGroup::All).unwrap();
-    monitor
+    let timing = monitor.measure_internal_parameters(ADCMode::Normal, StatusGroup::All).unwrap();
+    assert_eq!(1_600, timing.regular);
+    assert_eq!(2_000, timing.alternative);
+
+    let timing = monitor.measure_internal_parameters(ADCMode::Fast, StatusGroup::All).unwrap();
+    assert_eq!(742, timing.regular);
+    assert_eq!(858, timing.alternative);
+
+    let timing = monitor
         .measure_internal_parameters(ADCMode::Filtered, StatusGroup::All)
         .unwrap();
-    monitor.measure_internal_parameters(ADCMode::Other, StatusGroup::All).unwrap();
+    assert_eq!(134_000, timing.regular);
+    assert_eq!(3_000, timing.alternative);
+
+    let timing = monitor.measure_internal_parameters(ADCMode::Other, StatusGroup::All).unwrap();
+    assert_eq!(8_500, timing.regular);
+    assert_eq!(4_800, timing.alternative);
 }
 
 #[test]
@@ -349,19 +360,33 @@ fn test_measure_internal_parameters_status_groups() {
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(5));
-    monitor.measure_internal_parameters(ADCMode::Normal, StatusGroup::All).unwrap();
-    monitor
+    let timing = monitor.measure_internal_parameters(ADCMode::Normal, StatusGroup::All).unwrap();
+    assert_eq!(1_600, timing.regular);
+    assert_eq!(2_000, timing.alternative);
+
+    let timing = monitor
         .measure_internal_parameters(ADCMode::Normal, StatusGroup::CellSum)
         .unwrap();
-    monitor
+    assert_eq!(403, timing.regular);
+    assert_eq!(520, timing.alternative);
+
+    let timing = monitor
         .measure_internal_parameters(ADCMode::Normal, StatusGroup::Temperature)
         .unwrap();
-    monitor
+    assert_eq!(403, timing.regular);
+    assert_eq!(520, timing.alternative);
+
+    let timing = monitor
         .measure_internal_parameters(ADCMode::Normal, StatusGroup::AnalogVoltage)
         .unwrap();
-    monitor
+    assert_eq!(403, timing.regular);
+    assert_eq!(520, timing.alternative);
+
+    let timing = monitor
         .measure_internal_parameters(ADCMode::Normal, StatusGroup::DigitalVoltage)
         .unwrap();
+    assert_eq!(403, timing.regular);
+    assert_eq!(520, timing.alternative);
 }
 
 #[test]
