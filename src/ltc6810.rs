@@ -140,7 +140,7 @@ impl ToFullCommand for Register {
 }
 
 impl ToCommandTiming for CellSelection {
-    fn to_conf_command_timing(&self, mode: ADCMode) -> CommandTime {
+    fn to_conv_command_timing(&self, mode: ADCMode) -> CommandTime {
         match self {
             CellSelection::All => match mode {
                 ADCMode::Fast => CommandTime::new(1106, 1281),
@@ -164,7 +164,7 @@ impl ToCommandTiming for CellSelection {
 }
 
 impl ToCommandTiming for GPIOSelection {
-    fn to_conf_command_timing(&self, mode: ADCMode) -> CommandTime {
+    fn to_conv_command_timing(&self, mode: ADCMode) -> CommandTime {
         match self {
             GPIOSelection::All => match mode {
                 ADCMode::Fast => CommandTime::new(1103, 1277),

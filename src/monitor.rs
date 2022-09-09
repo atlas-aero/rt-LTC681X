@@ -417,7 +417,7 @@ pub trait ToCommandBitmap {
 /// Trait for determining the estimated execution time
 pub trait ToCommandTiming {
     /// Returns the expected execution time of ADCV command based on the ADC mode
-    fn to_conf_command_timing(&self, mode: ADCMode) -> CommandTime;
+    fn to_conv_command_timing(&self, mode: ADCMode) -> CommandTime;
 }
 
 /// Error in case writing to this register ist not supported and therefore no command exists.
@@ -691,7 +691,7 @@ where
         self.send_command(command).map_err(Error::TransferError)?;
         self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)?;
 
-        Ok(cells.to_conf_command_timing(mode))
+        Ok(cells.to_conv_command_timing(mode))
     }
 
     /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.start_conv_gpio)
@@ -705,7 +705,7 @@ where
         self.send_command(command).map_err(Error::TransferError)?;
         self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)?;
 
-        Ok(channels.to_conf_command_timing(mode))
+        Ok(channels.to_conv_command_timing(mode))
     }
 
     /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.start_overlap_measurement)
