@@ -98,7 +98,7 @@ impl Default for Configuration {
 /// GPIO pins of LTC681X device.
 /// Depending on the device type, not all pins may be available.
 /// Configuring a pin that is not physically available has no effect.
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum GPIO {
     GPIO1,
     GPIO2,
@@ -114,7 +114,7 @@ pub enum GPIO {
 /// Cell indexes of the LTC681X device.
 /// Depending on the device type, not all cells may be available.
 /// Configuring a cell that is not physically available has no effect.
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Cell {
     Cell1,
     Cell2,
@@ -137,7 +137,7 @@ pub enum Cell {
 }
 
 /// Timeout duration for discharge timer
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum DischargeTimeout {
     Disabled = 0x0,
     HalfMinute = 0x1,

@@ -2,7 +2,7 @@ use embedded_hal::blocking::spi::Transfer;
 use embedded_hal::digital::v2::OutputPin;
 use mockall::mock;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum BusError {
     Error1,
 }
@@ -17,7 +17,7 @@ mock! {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum PinError {
     Error1,
 }

@@ -298,7 +298,7 @@ impl<CS: OutputPin> PollMethod<CS> for NoPolling {
 }
 
 /// ADC frequency and filtering settings
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum ADCMode {
     /// 27kHz or 14kHz in case of CFGAR0=1 configuration
     Fast = 0x1,
@@ -311,7 +311,7 @@ pub enum ADCMode {
 }
 
 /// Selection of status group
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum StatusGroup {
     /// Includes SC, ITMP, VA, VD
     All = 0x0,

@@ -15,7 +15,7 @@ use embedded_hal::digital::v2::OutputPin;
 ///
 /// See page 61 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/LTC6811-1-6811-2.pdf>)
 /// for conversion times
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub enum CellSelection {
     /// All cells
     All = 0x0,
@@ -37,7 +37,7 @@ pub enum CellSelection {
 ///
 /// See page 61 of [datasheet](<https://www.analog.com/media/en/technical-documentation/data-sheets/LTC6811-1-6811-2.pdf>)
 /// for conversion times
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum GPIOSelection {
     /// GPIO 1-5 and 2nd Reference
     All = 0x0,
@@ -50,7 +50,7 @@ pub enum GPIOSelection {
 }
 
 /// Available registers
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Register {
     CellVoltageA,
     CellVoltageB,
@@ -65,7 +65,7 @@ pub enum Register {
 }
 
 /// All conversion channels
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum Channel {
     Cell1,
     Cell2,
