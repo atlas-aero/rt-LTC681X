@@ -4,8 +4,8 @@ use crate::commands::{
     CMD_R_CELL_V_REG_D, CMD_R_CONF_A, CMD_R_CONF_B, CMD_R_STATUS_A, CMD_R_STATUS_B, CMD_W_CONF_A, CMD_W_CONF_B,
 };
 use crate::monitor::{
-    ChannelIndex, ChannelType, DeviceTypes, GroupedRegisterIndex, NoPolling, NoWriteCommandError, RegisterAddress,
-    RegisterLocator, ToCommandBitmap, ToFullCommand, LTC681X,
+    ADCMode, ChannelIndex, ChannelType, CommandTime, DeviceTypes, GroupedRegisterIndex, NoPolling, NoWriteCommandError,
+    RegisterAddress, RegisterLocator, ToCommandBitmap, ToCommandTiming, ToFullCommand, LTC681X,
 };
 use core::slice::Iter;
 use embedded_hal::blocking::spi::Transfer;
@@ -154,6 +154,30 @@ impl ToFullCommand for Register {
             Register::ConfigurationA => Ok(CMD_W_CONF_A),
             Register::ConfigurationB => Ok(CMD_W_CONF_B),
             _ => Err(NoWriteCommandError {}),
+        }
+    }
+}
+
+impl ToCommandTiming for CellSelection {
+    fn to_adcv_command_time(&self, mode: ADCMode) -> CommandTime {
+        match self {
+            CellSelection::All => match mode {
+                ADCMode::Fast => CommandTime::new(1113, 1288),
+                ADCMode::Normal => CommandTime::new(2335, 3033),
+                ADCMode::Filtered => CommandTime::new(201_317, 4430),
+                ADCMode::Other => CommandTime::new(12_807, 7222),
+            },
+            CellSelection::Pair1
+            | CellSelection::Pair2
+            | CellSelection::Pair3
+            | CellSelection::Pair4
+            | CellSelection::Pair5
+            | CellSelection::Pair6 => match mode {
+                ADCMode::Fast => CommandTime::new(201, 230),
+                ADCMode::Normal => CommandTime::new(405, 501),
+                ADCMode::Filtered => CommandTime::new(33_568, 754),
+                ADCMode::Other => CommandTime::new(2150, 1219),
+            },
         }
     }
 }

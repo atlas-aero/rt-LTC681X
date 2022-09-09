@@ -15,10 +15,22 @@ fn test_start_conv_cells_acc_modes() {
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(4));
-    monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, false).unwrap();
-    monitor.start_conv_cells(ADCMode::Fast, CellSelection::All, false).unwrap();
-    monitor.start_conv_cells(ADCMode::Filtered, CellSelection::All, false).unwrap();
-    monitor.start_conv_cells(ADCMode::Other, CellSelection::All, false).unwrap();
+
+    let timing = monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, false).unwrap();
+    assert_eq!(2343, timing.regular);
+    assert_eq!(3041, timing.alternative);
+
+    let timing = monitor.start_conv_cells(ADCMode::Fast, CellSelection::All, false).unwrap();
+    assert_eq!(1121, timing.regular);
+    assert_eq!(1296, timing.alternative);
+
+    let timing = monitor.start_conv_cells(ADCMode::Filtered, CellSelection::All, false).unwrap();
+    assert_eq!(201325, timing.regular);
+    assert_eq!(4437, timing.alternative);
+
+    let timing = monitor.start_conv_cells(ADCMode::Other, CellSelection::All, false).unwrap();
+    assert_eq!(12816, timing.regular);
+    assert_eq!(7230, timing.alternative);
 }
 
 #[test]
@@ -34,13 +46,34 @@ fn test_start_conv_cells_cell_groups() {
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(7));
-    monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, false).unwrap();
-    monitor.start_conv_cells(ADCMode::Normal, CellSelection::Group1, false).unwrap();
-    monitor.start_conv_cells(ADCMode::Normal, CellSelection::Group2, false).unwrap();
-    monitor.start_conv_cells(ADCMode::Normal, CellSelection::Group3, false).unwrap();
-    monitor.start_conv_cells(ADCMode::Normal, CellSelection::Group4, false).unwrap();
-    monitor.start_conv_cells(ADCMode::Normal, CellSelection::Group5, false).unwrap();
-    monitor.start_conv_cells(ADCMode::Normal, CellSelection::Group6, false).unwrap();
+
+    let timing = monitor.start_conv_cells(ADCMode::Normal, CellSelection::All, false).unwrap();
+    assert_eq!(2343, timing.regular);
+    assert_eq!(3041, timing.alternative);
+
+    let timing = monitor.start_conv_cells(ADCMode::Normal, CellSelection::Group1, false).unwrap();
+    assert_eq!(407, timing.regular);
+    assert_eq!(523, timing.alternative);
+
+    let timing = monitor.start_conv_cells(ADCMode::Normal, CellSelection::Group2, false).unwrap();
+    assert_eq!(407, timing.regular);
+    assert_eq!(523, timing.alternative);
+
+    let timing = monitor.start_conv_cells(ADCMode::Normal, CellSelection::Group3, false).unwrap();
+    assert_eq!(407, timing.regular);
+    assert_eq!(523, timing.alternative);
+
+    let timing = monitor.start_conv_cells(ADCMode::Normal, CellSelection::Group4, false).unwrap();
+    assert_eq!(407, timing.regular);
+    assert_eq!(523, timing.alternative);
+
+    let timing = monitor.start_conv_cells(ADCMode::Normal, CellSelection::Group5, false).unwrap();
+    assert_eq!(407, timing.regular);
+    assert_eq!(523, timing.alternative);
+
+    let timing = monitor.start_conv_cells(ADCMode::Normal, CellSelection::Group6, false).unwrap();
+    assert_eq!(407, timing.regular);
+    assert_eq!(523, timing.alternative);
 }
 
 #[test]

@@ -53,6 +53,28 @@
 //! client.start_conv_cells(ADCMode::Fast, CellSelection::All, true);
 //! ````
 //!
+//! ### Conversion time
+//!
+//! Execution time of cell conversions is deterministic. The expected timing is returned as [CommandTime].
+//!
+//! ````
+//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::ltc6813::{CellSelection, LTC6813};
+//!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient};
+//!#
+//!# let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIBus::default(), ExampleCSPin{});
+//!#
+//!#
+//! // Converting first cell group using normal ADC mode
+//! let timing = client.start_conv_cells(ADCMode::Normal, CellSelection::Group1, true).unwrap();
+//!
+//! // 407 us in 7kHz mode (CFGAR0=0)
+//! assert_eq!(407, timing.regular);
+//!
+//! // 523 us in 3kHz mode (CFGAR0=1)
+//! assert_eq!(523, timing.alternative);
+//! ````
+//!
 //! ## GPIO conversion
 //!
 //! A GPIO conversion is started using the [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.start_conv_gpio) method.
@@ -371,6 +393,12 @@ pub trait ToCommandBitmap {
     fn to_bitmap(&self) -> u16;
 }
 
+/// Trait for determining the estimated execution time
+pub trait ToCommandTiming {
+    /// Returns the expected execution time of ADCV command based on the ADC mode
+    fn to_adcv_command_time(&self, mode: ADCMode) -> CommandTime;
+}
+
 /// Error in case writing to this register ist not supported and therefore no command exists.
 #[derive(Debug)]
 pub struct NoWriteCommandError {}
@@ -413,6 +441,22 @@ pub enum ChannelType {
     Reference,
 }
 
+/// Expected execution time of the issued command
+#[derive(Copy, Clone, Debug)]
+pub struct CommandTime {
+    /// Regular (CFGAR0=0) execution time in microseconds
+    pub regular: u32,
+
+    /// Alternative (CFGAR0=1) execution time in microseconds
+    pub alternative: u32,
+}
+
+impl CommandTime {
+    pub fn new(regular: u32, alternative: u32) -> Self {
+        Self { regular, alternative }
+    }
+}
+
 /// Collection of internal device parameters, measured by ADSTAT command
 #[derive(Debug)]
 pub struct InternalDeviceParameters {
@@ -433,7 +477,7 @@ pub struct InternalDeviceParameters {
 /// Device specific types
 pub trait DeviceTypes: Send + Sync + Sized + 'static {
     /// Argument for the identification of cell groups, which depends on the exact device type.
-    type CellSelection: ToCommandBitmap + RegisterLocator<Self> + Copy + Clone + Send + Sync;
+    type CellSelection: ToCommandBitmap + ToCommandTiming + RegisterLocator<Self> + Copy + Clone + Send + Sync;
 
     /// Argument for the identification of GPIO groups, which depends on the exact device type.
     type GPIOSelection: ToCommandBitmap + RegisterLocator<Self> + Copy + Clone + Send + Sync;
@@ -484,7 +528,12 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     /// * `mode`: ADC mode
     /// * `cells`: Measures the given cell group
     /// * `dcp`: True if discharge is permitted during conversion
-    fn start_conv_cells(&mut self, mode: ADCMode, cells: T::CellSelection, dcp: bool) -> Result<(), Self::Error>;
+    fn start_conv_cells(
+        &mut self,
+        mode: ADCMode,
+        cells: T::CellSelection,
+        dcp: bool,
+    ) -> Result<CommandTime, Self::Error>;
 
     /// Starts GPIOs ADC conversion
     ///
@@ -602,7 +651,12 @@ where
     type Error = Error<B, CS>;
 
     /// See [LTC681XClient::start_conv_cells](LTC681XClient#tymethod.start_conv_cells)
-    fn start_conv_cells(&mut self, mode: ADCMode, cells: T::CellSelection, dcp: bool) -> Result<(), Error<B, CS>> {
+    fn start_conv_cells(
+        &mut self,
+        mode: ADCMode,
+        cells: T::CellSelection,
+        dcp: bool,
+    ) -> Result<CommandTime, Error<B, CS>> {
         self.cs.set_low().map_err(Error::CSPinError)?;
         let mut command: u16 = 0b0000_0010_0110_0000;
 
@@ -614,7 +668,9 @@ where
         }
 
         self.send_command(command).map_err(Error::TransferError)?;
-        self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
+        self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)?;
+
+        Ok(cells.to_adcv_command_time(mode))
     }
 
     /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.start_conv_gpio)
