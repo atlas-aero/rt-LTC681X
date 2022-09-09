@@ -96,6 +96,27 @@
 //! client.start_conv_gpio(ADCMode::Fast, GPIOSelection::All);
 //! ````
 //!
+//! ### Conversion time
+//!
+//! Execution time of GPIO conversions is deterministic. The expected timing is returned as [CommandTime].
+//!
+//! ````
+//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::ltc6813::{GPIOSelection, LTC6813};
+//!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient};
+//!#
+//!# let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIBus::default(), ExampleCSPin{});
+//!#
+//! // Converting second GPIO group using normal ADC mode
+//! let timing = client.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group2).unwrap();
+//!
+//! // 788 us in 7kHz mode (CFGAR0=0)
+//! assert_eq!(788, timing.regular);
+//!
+//! // 1000 us in 3kHz mode (CFGAR0=1)
+//! assert_eq!(1000, timing.alternative);
+//! ````
+//!
 //! ## Polling
 //!
 //! ADC status may be be polled using the [PollClient::adc_ready](PollClient#tymethod.adc_ready) method.
@@ -396,7 +417,7 @@ pub trait ToCommandBitmap {
 /// Trait for determining the estimated execution time
 pub trait ToCommandTiming {
     /// Returns the expected execution time of ADCV command based on the ADC mode
-    fn to_adcv_command_time(&self, mode: ADCMode) -> CommandTime;
+    fn to_conf_command_timing(&self, mode: ADCMode) -> CommandTime;
 }
 
 /// Error in case writing to this register ist not supported and therefore no command exists.
@@ -480,7 +501,7 @@ pub trait DeviceTypes: Send + Sync + Sized + 'static {
     type CellSelection: ToCommandBitmap + ToCommandTiming + RegisterLocator<Self> + Copy + Clone + Send + Sync;
 
     /// Argument for the identification of GPIO groups, which depends on the exact device type.
-    type GPIOSelection: ToCommandBitmap + RegisterLocator<Self> + Copy + Clone + Send + Sync;
+    type GPIOSelection: ToCommandBitmap + ToCommandTiming + RegisterLocator<Self> + Copy + Clone + Send + Sync;
 
     /// Argument for register selection. The available registers depend on the device.
     type Register: ToFullCommand + GroupedRegisterIndex + Copy + Clone + Send + Sync;
@@ -541,7 +562,7 @@ pub trait LTC681XClient<T: DeviceTypes, const L: usize> {
     ///
     /// * `mode`: ADC mode
     /// * `channels`: Measures t:he given GPIO group
-    fn start_conv_gpio(&mut self, mode: ADCMode, pins: T::GPIOSelection) -> Result<(), Self::Error>;
+    fn start_conv_gpio(&mut self, mode: ADCMode, pins: T::GPIOSelection) -> Result<CommandTime, Self::Error>;
 
     /// Start the  Overlap Measurements (ADOL command)
     /// Note: This command is not available on LTC6810, as this device only includes one ADC
@@ -670,11 +691,11 @@ where
         self.send_command(command).map_err(Error::TransferError)?;
         self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)?;
 
-        Ok(cells.to_adcv_command_time(mode))
+        Ok(cells.to_conf_command_timing(mode))
     }
 
     /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.start_conv_gpio)
-    fn start_conv_gpio(&mut self, mode: ADCMode, channels: T::GPIOSelection) -> Result<(), Error<B, CS>> {
+    fn start_conv_gpio(&mut self, mode: ADCMode, channels: T::GPIOSelection) -> Result<CommandTime, Error<B, CS>> {
         self.cs.set_low().map_err(Error::CSPinError)?;
         let mut command: u16 = 0b0000_0100_0110_0000;
 
@@ -682,7 +703,9 @@ where
         command |= channels.to_bitmap();
 
         self.send_command(command).map_err(Error::TransferError)?;
-        self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
+        self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)?;
+
+        Ok(channels.to_conf_command_timing(mode))
     }
 
     /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.start_overlap_measurement)

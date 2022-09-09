@@ -143,14 +143,25 @@ fn test_start_conv_gpio_acc_modes() {
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(4));
-    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::All).unwrap();
-    monitor.start_conv_gpio(ADCMode::Fast, GPIOSelection::All).unwrap();
-    monitor.start_conv_gpio(ADCMode::Filtered, GPIOSelection::All).unwrap();
-    monitor.start_conv_gpio(ADCMode::Other, GPIOSelection::All).unwrap();
+    let timing = monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::All).unwrap();
+    assert_eq!(3862, timing.regular);
+    assert_eq!(5025, timing.alternative);
+
+    let timing = monitor.start_conv_gpio(ADCMode::Fast, GPIOSelection::All).unwrap();
+    assert_eq!(1825, timing.regular);
+    assert_eq!(2116, timing.alternative);
+
+    let timing = monitor.start_conv_gpio(ADCMode::Filtered, GPIOSelection::All).unwrap();
+    assert_eq!(335_498, timing.regular);
+    assert_eq!(7_353, timing.alternative);
+
+    let timing = monitor.start_conv_gpio(ADCMode::Other, GPIOSelection::All).unwrap();
+    assert_eq!(21_316, timing.regular);
+    assert_eq!(12_007, timing.alternative);
 }
 
 #[test]
-fn test_start_conv_gpio_cell_groups() {
+fn test_start_conv_gpio_groups() {
     let bus = BusMockBuilder::new()
         .expect_command(0b0000_0101, 0b0110_0000, 0xD3, 0xA0)
         .expect_command(0b0000_0101, 0b0110_0001, 0x58, 0x92)
@@ -162,13 +173,33 @@ fn test_start_conv_gpio_cell_groups() {
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, _, 1> = LTC681X::ltc6813(bus, get_cs_no_polling(7));
-    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::All).unwrap();
-    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group1).unwrap();
-    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group2).unwrap();
-    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group3).unwrap();
-    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group4).unwrap();
-    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group5).unwrap();
-    monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group6).unwrap();
+    let timing = monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::All).unwrap();
+    assert_eq!(3862, timing.regular);
+    assert_eq!(5025, timing.alternative);
+
+    let timing = monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group1).unwrap();
+    assert_eq!(788, timing.regular);
+    assert_eq!(1000, timing.alternative);
+
+    let timing = monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group2).unwrap();
+    assert_eq!(788, timing.regular);
+    assert_eq!(1000, timing.alternative);
+
+    let timing = monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group3).unwrap();
+    assert_eq!(788, timing.regular);
+    assert_eq!(1000, timing.alternative);
+
+    let timing = monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group4).unwrap();
+    assert_eq!(788, timing.regular);
+    assert_eq!(1000, timing.alternative);
+
+    let timing = monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group5).unwrap();
+    assert_eq!(403, timing.regular);
+    assert_eq!(520, timing.alternative);
+
+    let timing = monitor.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group6).unwrap();
+    assert_eq!(403, timing.regular);
+    assert_eq!(520, timing.alternative);
 }
 
 #[test]

@@ -159,7 +159,7 @@ impl ToFullCommand for Register {
 }
 
 impl ToCommandTiming for CellSelection {
-    fn to_adcv_command_time(&self, mode: ADCMode) -> CommandTime {
+    fn to_conf_command_timing(&self, mode: ADCMode) -> CommandTime {
         match self {
             CellSelection::All => match mode {
                 ADCMode::Fast => CommandTime::new(1113, 1288),
@@ -177,6 +177,30 @@ impl ToCommandTiming for CellSelection {
                 ADCMode::Normal => CommandTime::new(405, 501),
                 ADCMode::Filtered => CommandTime::new(33_568, 754),
                 ADCMode::Other => CommandTime::new(2150, 1219),
+            },
+        }
+    }
+}
+
+impl ToCommandTiming for GPIOSelection {
+    fn to_conf_command_timing(&self, mode: ADCMode) -> CommandTime {
+        match self {
+            GPIOSelection::All => match mode {
+                ADCMode::Fast => CommandTime::new(1113, 1288),
+                ADCMode::Normal => CommandTime::new(2335, 3033),
+                ADCMode::Filtered => CommandTime::new(201_317, 4430),
+                ADCMode::Other => CommandTime::new(12_807, 7_222),
+            },
+            GPIOSelection::GPIO1
+            | GPIOSelection::GPIO2
+            | GPIOSelection::GPIO3
+            | GPIOSelection::GPIO4
+            | GPIOSelection::GPIO5
+            | GPIOSelection::SecondReference => match mode {
+                ADCMode::Fast => CommandTime::new(201, 230),
+                ADCMode::Normal => CommandTime::new(405, 501),
+                ADCMode::Filtered => CommandTime::new(34_000, 751),
+                ADCMode::Other => CommandTime::new(2_200, 1_200),
             },
         }
     }
