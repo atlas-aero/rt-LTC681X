@@ -942,6 +942,7 @@ where
 
         let pec = PEC15::calc(&result[0..6]);
         if pec[0] != result[6] || pec[1] != result[7] {
+            self.cs.set_high().map_err(Error::CSPinError)?;
             return Err(Error::ChecksumMismatch);
         }
 
