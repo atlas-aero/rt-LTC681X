@@ -974,13 +974,13 @@ where
         }
 
         // Constant of 276 °C, which needs to be subtracted
-        const TEMP_SUB: i16 = 20976;
+        const TEMP_SUB: i32 = 20976;
 
         // Check if temperature is negative
-        let temp_i32: i16 = if value >= TEMP_SUB as u16 {
-            value as i16 - TEMP_SUB
+        let temp_i32: i32 = if value >= TEMP_SUB as u16 {
+            value as i32 - TEMP_SUB
         } else {
-            0 - TEMP_SUB + value as i16
+            0 - TEMP_SUB + value as i32
         };
 
         // Applying factor 100 uV/7.6 mV
