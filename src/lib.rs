@@ -14,7 +14,7 @@
 //!
 //! # Example
 //!
-//! For all details see [monitor](crate::monitor) module.
+//! For all details see [monitor] module.
 //!
 //! ````
 //!use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
