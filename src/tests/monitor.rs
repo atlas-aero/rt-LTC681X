@@ -1601,6 +1601,10 @@ fn test_read_voltages_gpio_all() {
 
     assert_eq!(Channel::SecondReference, result[0][9].channel);
     assert_eq!(7330, result[0][9].voltage);
+
+    // Assert cloning is working
+    let cloned_voltage = result[0][0];
+    assert_eq!(24979, cloned_voltage.voltage);
 }
 
 #[test]

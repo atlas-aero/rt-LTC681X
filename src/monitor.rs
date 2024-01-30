@@ -409,10 +409,7 @@ impl<T: DeviceTypes> Copy for Voltage<T> {}
 
 impl<T: DeviceTypes> Clone for Voltage<T> {
     fn clone(&self) -> Self {
-        Self {
-            channel: self.channel,
-            voltage: self.voltage,
-        }
+        *self
     }
 }
 
