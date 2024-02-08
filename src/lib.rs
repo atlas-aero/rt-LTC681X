@@ -47,6 +47,8 @@
 #[cfg(test)]
 extern crate alloc;
 
+pub use heapless;
+
 pub mod config;
 #[cfg(feature = "example")]
 pub mod example;
