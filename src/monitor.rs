@@ -10,20 +10,18 @@
 //! * L: Number of devices in daisy chain
 //!
 //! ````
-//! use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//! use ltc681x::example::ExampleSPIDevice;
 //! use ltc681x::ltc6812::LTC6812;
 //! use ltc681x::ltc6813::LTC6813;
 //! use ltc681x::monitor::LTC681X;
 //!
 //! // Single LTC6813 device
-//! let spi_bus = ExampleSPIBus::default();
-//! let cs_pin = ExampleCSPin{};
-//! let client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus, cs_pin);
+//! let spi_bus = ExampleSPIDevice::default();
+//! let client: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus);
 //!
 //! // Three LTC6812 devices in daisy chain
-//! let spi_bus = ExampleSPIBus::default();
-//! let cs_pin = ExampleCSPin{};
-//! let client: LTC681X<_, _, _, LTC6812, 3> = LTC681X::ltc6812(spi_bus, cs_pin);
+//! let spi_bus = ExampleSPIDevice::default();
+//! let client: LTC681X<_, _, LTC6812, 3> = LTC681X::ltc6812(spi_bus);
 //! ````
 //!
 //! # Conversion
@@ -39,11 +37,11 @@
 //! * **dcp**: Allow discharging during conversion?
 //!
 //! ````
-//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::example::ExampleSPIDevice;
 //!# use ltc681x::ltc6813::{CellSelection, LTC6813};
 //!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient};
 //!#
-//!# let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIBus::default(), ExampleCSPin{});
+//!# let mut  client: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIDevice::default());
 //!#
 //!#
 //! // Converting first cell group using normal ADC mode
@@ -58,11 +56,11 @@
 //! Execution time of cell conversions is deterministic. The expected timing is returned as [CommandTime].
 //!
 //! ````
-//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::example::ExampleSPIDevice;
 //!# use ltc681x::ltc6813::{CellSelection, LTC6813};
 //!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient};
 //!#
-//!# let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIBus::default(), ExampleCSPin{});
+//!# let mut  client: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIDevice::default());
 //!#
 //!#
 //! // Converting first cell group using normal ADC mode
@@ -83,11 +81,11 @@
 //! * **pins**: Group of GPIO channels to be converted, e.g. [LTC6813::GPIOSelection](crate::ltc6813::GPIOSelection)
 //!
 //! ````
-//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::example::ExampleSPIDevice;
 //!# use ltc681x::ltc6813::{GPIOSelection, LTC6813};
 //!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient};
 //!#
-//!# let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIBus::default(), ExampleCSPin{});
+//!# let mut  client: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIDevice::default());
 //!#
 //! // Converting second GPIO group using normal ADC mode
 //! client.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group2);
@@ -101,11 +99,11 @@
 //! Execution time of GPIO conversions is deterministic. The expected timing is returned as [CommandTime].
 //!
 //! ````
-//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::example::ExampleSPIDevice;
 //!# use ltc681x::ltc6813::{GPIOSelection, LTC6813};
 //!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient};
 //!#
-//!# let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIBus::default(), ExampleCSPin{});
+//!# let mut  client: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIDevice::default());
 //!#
 //! // Converting second GPIO group using normal ADC mode
 //! let timing = client.start_conv_gpio(ADCMode::Normal, GPIOSelection::Group2).unwrap();
@@ -127,15 +125,20 @@
 //! After entering a conversion command, the SDO line is driven low when the device is busy performing
 //! conversions. SDO is pulled high when the device completes conversions.
 //!
+//! This involves controlling the CS pin, as CS needs to stay low until the ADC conversion is finished.
+//! 'crate::spi::LatchingSpiDevice' is implementing this behaviour and is used internally.
+//!
+//! Please note that if this poll method is used, the SPI bus cannot be used by any other device
+//! until the conversion is complete.
+//!
 //! ````
-//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus, ExampleSPIDevice};
 //!# use ltc681x::ltc6813::{GPIOSelection, LTC6813};
 //!# use ltc681x::monitor::{ADCMode, LTC681X, PollClient};
 //!#
 //!# let spi_bus = ExampleSPIBus::default();
 //!# let cs_pin = ExampleCSPin{};
-//! let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus, cs_pin)
-//!     .enable_sdo_polling();
+//! let mut  client: LTC681X<_, _, LTC6813, 1> = LTC681X::enable_sdo_polling(spi_bus, cs_pin);
 //!
 //! while !client.adc_ready().unwrap() {
 //!     // ADC conversion is not finished yet
@@ -148,14 +151,13 @@
 //! one value for each register slot.
 //!
 //! ````
-//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::example::ExampleSPIDevice;
 //!# use ltc681x::ltc6813::{GPIOSelection, LTC6813, Register};
 //!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient, PollClient};
 //!#
-//!# let spi_bus = ExampleSPIBus::default();
-//!# let cs_pin = ExampleCSPin{};
+//!# let spi_bus = ExampleSPIDevice::default();
 //! // Single LTC613 device
-//! let mut client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus, cs_pin);
+//! let mut client: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus);
 //!
 //! // Reading cell voltage register B (CVBR)
 //! let cell_voltages = client.read_register(Register::CellVoltageB).unwrap();
@@ -174,14 +176,13 @@
 //! The second index addresses the slot within the register (0, 1, 2).
 //!
 //! ````
-//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::example::ExampleSPIDevice;
 //!# use ltc681x::ltc6813::{GPIOSelection, LTC6813, Register};
 //!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient, PollClient};
 //!#
-//!# let spi_bus = ExampleSPIBus::default();
-//!# let cs_pin = ExampleCSPin{};
+//!# let spi_bus = ExampleSPIDevice::default();
 //! // Three LTC613 devices in daisy chain
-//! let mut client: LTC681X<_, _, _, LTC6813, 3> = LTC681X::ltc6813(spi_bus, cs_pin);
+//! let mut client: LTC681X<_, _, LTC6813, 3> = LTC681X::ltc6813(spi_bus);
 //!
 //! // Reading cell voltage register A (CVAR)
 //! let cell_voltages = client.read_register(Register::CellVoltageA).unwrap();
@@ -198,15 +199,14 @@
 //! voltages to cell or GPIO groups.
 //!
 //! ````
-//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::example::ExampleSPIDevice;
 //!# use ltc681x::ltc6813::{CellSelection, Channel, GPIOSelection, LTC6813, Register};
 //!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient, PollClient};
 //!#
-//!# let spi_bus = ExampleSPIBus::default();
-//!# let cs_pin = ExampleCSPin{};
+//!# let spi_bus = ExampleSPIDevice::default();
 //!#
 //! // LTC6813 device
-//! let mut client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus, cs_pin);
+//! let mut client: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus);
 //!
 //! // Returns the value of cell group A. In case of LTC613: cell 1, 7 and 13
 //! let voltages = client.read_voltages(CellSelection::Group1).unwrap();
@@ -238,12 +238,11 @@
 //!
 //! Starting the ADC overlapping measurement and reading the results:
 //! ````
-//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::example::ExampleSPIDevice;
 //!# use ltc681x::ltc6813::{CellSelection, LTC6813};
 //!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient};
 //!#
-//!# let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIBus::default(), ExampleCSPin{});
-//!#
+//!# let mut  client: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIDevice::default());
 //!#
 //! client.start_overlap_measurement(ADCMode::Normal, true);
 //! // [...] waiting until conversion finished
@@ -265,11 +264,11 @@
 //!
 //! The expected execution time is returned as [CommandTime], see [command timing of cell conversion](#conversion-time) as example.
 //! ````
-//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::example::ExampleSPIDevice;
 //!# use ltc681x::ltc6813::{CellSelection, LTC6813};
 //!# use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient, StatusGroup};
 //!#
-//!# let mut  client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIBus::default(), ExampleCSPin{});
+//!# let mut  client: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(ExampleSPIDevice::default());
 //!#
 //!#
 //! client.measure_internal_parameters(ADCMode::Normal, StatusGroup::All);
@@ -286,37 +285,38 @@
 //! assert_eq!(5_120_000, data[0].digital_power);
 //! ````
 use crate::config::Configuration;
-use crate::monitor::Error::TransferError;
+use crate::monitor::Error::BusError;
 use crate::pec15::PEC15;
+use crate::spi::LatchingSpiDevice;
 use core::fmt::{Debug, Display, Formatter};
 use core::marker::PhantomData;
 use core::slice::Iter;
-use embedded_hal::blocking::spi::Transfer;
-use embedded_hal::digital::v2::OutputPin;
+use embedded_hal::digital::OutputPin;
+use embedded_hal::spi::{SpiBus, SpiDevice};
 use fixed::types::I16F16;
 use heapless::Vec;
 
 /// Poll Strategy
-pub trait PollMethod<CS: OutputPin> {
-    /// Handles the CS pin state after command has been sent
-    fn end_command(&self, cs: &mut CS) -> Result<(), CS::Error>;
+pub trait PollMethod<B: SpiDevice> {
+    /// Gets called by synchronous commands, which not require any waiting/polling (e.g. writing registers)
+    fn end_sync_command(&self, bus: &mut B) -> Result<(), B::Error>;
 }
 
 /// Leaves CS Low and waits until SDO goes high
 pub struct SDOLinePolling {}
 
-impl<CS: OutputPin> PollMethod<CS> for SDOLinePolling {
-    fn end_command(&self, _cs: &mut CS) -> Result<(), CS::Error> {
-        Ok(())
+impl<B: SpiBus, CS: OutputPin> PollMethod<LatchingSpiDevice<B, CS>> for SDOLinePolling {
+    fn end_sync_command(&self, bus: &mut LatchingSpiDevice<B, CS>) -> Result<(), crate::spi::Error<B, CS>> {
+        bus.release_cs()
     }
 }
 
 /// No ADC polling is used
 pub struct NoPolling {}
 
-impl<CS: OutputPin> PollMethod<CS> for NoPolling {
-    fn end_command(&self, cs: &mut CS) -> Result<(), CS::Error> {
-        cs.set_high()
+impl<B: SpiDevice> PollMethod<B> for NoPolling {
+    fn end_sync_command(&self, _bus: &mut B) -> Result<(), B::Error> {
+        Ok(())
     }
 }
 
@@ -415,17 +415,14 @@ impl<T: DeviceTypes> Clone for Voltage<T> {
 
 /// Error enum of LTC681X
 #[derive(PartialEq)]
-pub enum Error<B: Transfer<u8>, CS: OutputPin> {
+pub enum Error<B: SpiDevice<u8>> {
     /// SPI transfer error
-    TransferError(B::Error),
-
-    /// Error while changing state of CS pin
-    CSPinError(CS::Error),
+    BusError(B::Error),
 
     /// PEC checksum of returned data was invalid
     ChecksumMismatch,
 
-    /// Writing to to the given register is not supported
+    /// Writing to the given register is not supported
     ReadOnlyRegister,
 }
 
@@ -648,18 +645,14 @@ pub trait PollClient {
 }
 
 /// Client for LTC681X IC
-pub struct LTC681X<B, CS, P, T, const L: usize>
+pub struct LTC681X<B, P, T, const L: usize>
 where
-    B: Transfer<u8>,
-    CS: OutputPin,
-    P: PollMethod<CS>,
+    B: SpiDevice<u8>,
+    P: PollMethod<B>,
     T: DeviceTypes,
 {
     /// SPI bus
     bus: B,
-
-    /// SPI CS pin
-    cs: CS,
 
     /// Poll method used for type state
     poll_method: P,
@@ -667,39 +660,30 @@ where
     device_types: PhantomData<T>,
 }
 
-impl<B, CS, T, const L: usize> LTC681X<B, CS, NoPolling, T, L>
+impl<B, T, const L: usize> LTC681X<B, NoPolling, T, L>
 where
-    B: Transfer<u8>,
-    CS: OutputPin,
+    B: SpiDevice<u8>,
     T: DeviceTypes,
 {
-    pub(crate) fn new(bus: B, cs: CS) -> Self {
+    pub(crate) fn new(spi_device: B) -> Self {
         LTC681X {
-            bus,
-            cs,
+            bus: spi_device,
             poll_method: NoPolling {},
             device_types: PhantomData,
         }
     }
 }
 
-impl<B, CS, P, T, const L: usize> LTC681XClient<T, L> for LTC681X<B, CS, P, T, L>
+impl<B, P, T, const L: usize> LTC681XClient<T, L> for LTC681X<B, P, T, L>
 where
-    B: Transfer<u8>,
-    CS: OutputPin,
-    P: PollMethod<CS>,
+    B: SpiDevice<u8>,
+    P: PollMethod<B>,
     T: DeviceTypes,
 {
-    type Error = Error<B, CS>;
+    type Error = Error<B>;
 
     /// See [LTC681XClient::start_conv_cells](LTC681XClient#tymethod.start_conv_cells)
-    fn start_conv_cells(
-        &mut self,
-        mode: ADCMode,
-        cells: T::CellSelection,
-        dcp: bool,
-    ) -> Result<CommandTime, Error<B, CS>> {
-        self.cs.set_low().map_err(Error::CSPinError)?;
+    fn start_conv_cells(&mut self, mode: ADCMode, cells: T::CellSelection, dcp: bool) -> Result<CommandTime, Error<B>> {
         let mut command: u16 = 0b0000_0010_0110_0000;
 
         command |= (mode as u16) << 7;
@@ -709,29 +693,25 @@ where
             command |= 0b0001_0000;
         }
 
-        self.send_command(command).map_err(Error::TransferError)?;
-        self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)?;
+        self.send_command(command).map_err(Error::BusError)?;
 
         Ok(cells.to_conv_command_timing(mode))
     }
 
     /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.start_conv_gpio)
-    fn start_conv_gpio(&mut self, mode: ADCMode, channels: T::GPIOSelection) -> Result<CommandTime, Error<B, CS>> {
-        self.cs.set_low().map_err(Error::CSPinError)?;
+    fn start_conv_gpio(&mut self, mode: ADCMode, channels: T::GPIOSelection) -> Result<CommandTime, Error<B>> {
         let mut command: u16 = 0b0000_0100_0110_0000;
 
         command |= (mode as u16) << 7;
         command |= channels.to_bitmap();
 
-        self.send_command(command).map_err(Error::TransferError)?;
-        self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)?;
+        self.send_command(command).map_err(Error::BusError)?;
 
         Ok(channels.to_conv_command_timing(mode))
     }
 
     /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.start_overlap_measurement)
-    fn start_overlap_measurement(&mut self, mode: ADCMode, dcp: bool) -> Result<(), Error<B, CS>> {
-        self.cs.set_low().map_err(Error::CSPinError)?;
+    fn start_overlap_measurement(&mut self, mode: ADCMode, dcp: bool) -> Result<(), Error<B>> {
         let mut command: u16 = 0b0000_0010_0000_0001;
 
         command |= (mode as u16) << 7;
@@ -740,38 +720,34 @@ where
             command |= 0b0001_0000;
         }
 
-        self.send_command(command).map_err(Error::TransferError)?;
-        self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)
+        self.send_command(command).map_err(BusError)
     }
 
     /// See [LTC681XClient::start_conv_gpio](LTC681XClient#tymethod.measure_internal_parameters)
-    fn measure_internal_parameters(&mut self, mode: ADCMode, group: StatusGroup) -> Result<CommandTime, Error<B, CS>> {
-        self.cs.set_low().map_err(Error::CSPinError)?;
+    fn measure_internal_parameters(&mut self, mode: ADCMode, group: StatusGroup) -> Result<CommandTime, Error<B>> {
         let mut command: u16 = 0b0000_0100_0110_1000;
 
         command |= (mode as u16) << 7;
         command |= group.to_bitmap();
 
-        self.send_command(command).map_err(Error::TransferError)?;
-        self.poll_method.end_command(&mut self.cs).map_err(Error::CSPinError)?;
+        self.send_command(command).map_err(Error::BusError)?;
 
         Ok(group.to_conv_command_timing(mode))
     }
 
     /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.read_register)
-    fn read_register(&mut self, register: T::Register) -> Result<[[u16; 3]; L], Error<B, CS>> {
+    fn read_register(&mut self, register: T::Register) -> Result<[[u16; 3]; L], Error<B>> {
         self.read_daisy_chain(register.to_read_command())
     }
 
     /// See [LTC681XClient::read_cell_voltages](LTC681XClient#tymethod.write_register)
-    fn write_register(&mut self, register: T::Register, data: [[u8; 6]; L]) -> Result<(), Error<B, CS>> {
-        let mut pre_command = match register.to_write_command() {
+    fn write_register(&mut self, register: T::Register, data: [[u8; 6]; L]) -> Result<(), Error<B>> {
+        let pre_command = match register.to_write_command() {
             Ok(command) => command,
             Err(_) => return Err(Error::ReadOnlyRegister),
         };
 
-        self.cs.set_low().map_err(Error::CSPinError)?;
-        self.bus.transfer(&mut pre_command).map_err(Error::TransferError)?;
+        self.bus.write(&pre_command).map_err(Error::BusError)?;
 
         for item in &data {
             let mut full_command: [u8; 8] = [0x0; 8];
@@ -781,10 +757,10 @@ where
             full_command[6] = pec[0];
             full_command[7] = pec[1];
 
-            self.bus.transfer(&mut full_command).map_err(Error::TransferError)?;
+            self.bus.write(&full_command).map_err(Error::BusError)?;
         }
 
-        self.cs.set_high().map_err(Error::CSPinError)?;
+        self.poll_method.end_sync_command(&mut self.bus).map_err(Error::BusError)?;
         Ok(())
     }
 
@@ -899,11 +875,10 @@ where
     }
 }
 
-impl<B, CS, P, T, const L: usize> LTC681X<B, CS, P, T, L>
+impl<B, P, T, const L: usize> LTC681X<B, P, T, L>
 where
-    B: Transfer<u8>,
-    CS: OutputPin,
-    P: PollMethod<CS>,
+    B: SpiDevice<u8>,
+    P: PollMethod<B>,
     T: DeviceTypes,
 {
     /// Sends the given command. Calculates and attaches the PEC checksum
@@ -914,28 +889,27 @@ where
         data[2] = pec[0];
         data[3] = pec[1];
 
-        self.bus.transfer(&mut data)?;
+        self.bus.write(&data)?;
         Ok(())
     }
 
     /// Send the given read command and returns the response of all devices in daisy chain
-    fn read_daisy_chain(&mut self, mut command: [u8; 4]) -> Result<[[u16; 3]; L], Error<B, CS>> {
-        self.cs.set_low().map_err(Error::CSPinError)?;
-        self.bus.transfer(&mut command).map_err(Error::TransferError)?;
+    fn read_daisy_chain(&mut self, command: [u8; 4]) -> Result<[[u16; 3]; L], Error<B>> {
+        self.bus.write(&command).map_err(Error::BusError)?;
 
         let mut result = [[0, 0, 0]; L];
         for item in result.iter_mut().take(L) {
             *item = self.read()?;
         }
 
-        self.cs.set_high().map_err(Error::CSPinError)?;
+        self.poll_method.end_sync_command(&mut self.bus).map_err(Error::BusError)?;
         Ok(result)
     }
 
     /// Reads a register
-    fn read(&mut self) -> Result<[u16; 3], Error<B, CS>> {
-        let mut command = [0xff_u8; 8];
-        let result = self.bus.transfer(&mut command).map_err(TransferError)?;
+    fn read(&mut self) -> Result<[u16; 3], Error<B>> {
+        let mut result = [0xff_u8; 8];
+        self.bus.read(&mut result).map_err(BusError)?;
 
         let pec = PEC15::calc(&result[0..6]);
         if pec[0] != result[6] || pec[1] != result[7] {
@@ -948,19 +922,6 @@ where
         registers[2] |= (result[5] as u16) << 8;
 
         Ok(registers)
-    }
-
-    /// Enables SDO ADC polling
-    ///
-    /// After entering a conversion command, the SDO line is driven low when the device is busy
-    /// performing conversions. SDO is pulled high when the device completes conversions.
-    pub fn enable_sdo_polling(self) -> LTC681X<B, CS, SDOLinePolling, T, L> {
-        LTC681X {
-            bus: self.bus,
-            cs: self.cs,
-            poll_method: SDOLinePolling {},
-            device_types: PhantomData,
-        }
     }
 
     /// Calculates the temperature in °C based on raw register value
@@ -984,22 +945,41 @@ where
     }
 }
 
-impl<B, CS, T, const L: usize> PollClient for LTC681X<B, CS, SDOLinePolling, T, L>
+impl<S, CS, T, const L: usize> LTC681X<LatchingSpiDevice<S, CS>, SDOLinePolling, T, L>
 where
-    B: Transfer<u8>,
+    S: SpiBus<u8>,
     CS: OutputPin,
     T: DeviceTypes,
 {
-    type Error = Error<B, CS>;
+    /// Enables SDO ADC polling
+    ///
+    /// After entering a conversion command, the SDO line is driven low when the device is busy
+    /// performing conversions. SDO is pulled high when the device completes conversions.
+    pub fn enable_sdo_polling(bus: S, cs: CS) -> LTC681X<LatchingSpiDevice<S, CS>, SDOLinePolling, T, L> {
+        LTC681X {
+            bus: LatchingSpiDevice::new(bus, cs),
+            poll_method: SDOLinePolling {},
+            device_types: PhantomData,
+        }
+    }
+}
+
+impl<B, CS, T, const L: usize> PollClient for LTC681X<LatchingSpiDevice<B, CS>, SDOLinePolling, T, L>
+where
+    B: SpiBus,
+    CS: OutputPin,
+    T: DeviceTypes,
+{
+    type Error = crate::spi::Error<B, CS>;
 
     /// Returns false if the ADC is busy
     /// If ADC is ready, CS line is pulled high
     fn adc_ready(&mut self) -> Result<bool, Self::Error> {
-        let mut command = [0xff];
-        let result = self.bus.transfer(&mut command).map_err(Error::TransferError)?;
+        let mut buffer = [0x0];
+        self.bus.read(&mut buffer)?;
 
-        if result[0] == 0xff {
-            self.cs.set_high().map_err(Error::CSPinError)?;
+        if buffer[0] == 0xff {
+            self.bus.release_cs()?;
             return Ok(true);
         }
 
@@ -1007,11 +987,10 @@ where
     }
 }
 
-impl<B: Transfer<u8>, CS: OutputPin> Debug for Error<B, CS> {
+impl<B: SpiDevice<u8>> Debug for Error<B> {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            Error::TransferError(_) => f.debug_struct("TransferError").finish(),
-            Error::CSPinError(_) => f.debug_struct("CSPinError").finish(),
+            Error::BusError(_) => f.debug_struct("BusError").finish(),
             Error::ChecksumMismatch => f.debug_struct("ChecksumMismatch").finish(),
             Error::ReadOnlyRegister => f.debug_struct("ReadOnlyRegister").finish(),
         }

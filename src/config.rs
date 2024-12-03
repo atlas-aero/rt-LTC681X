@@ -6,16 +6,15 @@
 //!
 //! For full details s. [Configuration] struct.
 //!
-//! ````
+//!````
 //! use ltc681x::config::{Cell, Configuration};
-//! use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//! use ltc681x::example::ExampleSPIDevice;
 //! use ltc681x::ltc6813::LTC6813;
 //! use ltc681x::monitor::{LTC681X, LTC681XClient};
 //!
 //! // Single LTC6813 device
-//! let spi_bus = ExampleSPIBus::default();
-//! let cs_pin = ExampleCSPin{};
-//! let mut client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus, cs_pin);
+//! let spi_bus = ExampleSPIDevice::default();
+//! let mut client: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus);
 //!
 //! let mut config = Configuration::default();
 //!
@@ -37,15 +36,14 @@
 //! Writing to multiple devices in daisy-chain is supported, by providing an array item per device:
 //! ````
 //!# use ltc681x::config::{Cell, Configuration};
-//!# use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!# use ltc681x::example::ExampleSPIDevice;
 //!# use ltc681x::ltc6813::LTC6813;
 //!# use ltc681x::monitor::{LTC681X, LTC681XClient};
 //!#
 //!# // Single LTC6813 device
-//!# let spi_bus = ExampleSPIBus::default();
-//!# let cs_pin = ExampleCSPin{};
+//!# let spi_bus = ExampleSPIDevice::default();
 //! // 3 devices in daisy chain
-//! let mut client: LTC681X<_, _, _, LTC6813, 3> = LTC681X::ltc6813(spi_bus, cs_pin);
+//! let mut client: LTC681X<_, _, LTC6813, 3> = LTC681X::ltc6813(spi_bus);
 //!
 //! let mut config = [
 //!     Configuration::default(),

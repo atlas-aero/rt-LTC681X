@@ -8,8 +8,7 @@ use crate::monitor::{
     RegisterAddress, RegisterLocator, ToCommandBitmap, ToCommandTiming, ToFullCommand, LTC681X,
 };
 use core::slice::Iter;
-use embedded_hal::blocking::spi::Transfer;
-use embedded_hal::digital::v2::OutputPin;
+use embedded_hal::spi::SpiDevice;
 
 /// Cell selection for ADC conversion
 ///
@@ -109,14 +108,13 @@ impl DeviceTypes for LTC6811 {
     const REG_CONF_B: Option<Self::Register> = Some(Register::ConfigurationB);
 }
 
-impl<B, CS, const L: usize> LTC681X<B, CS, NoPolling, LTC6811, L>
+impl<B, const L: usize> LTC681X<B, NoPolling, LTC6811, L>
 where
-    B: Transfer<u8>,
-    CS: OutputPin,
+    B: SpiDevice<u8>,
 {
     /// Creates a client instant for LTC6811 variant
-    pub fn ltc6811(bus: B, cs: CS) -> Self {
-        LTC681X::new(bus, cs)
+    pub fn ltc6811(bus: B) -> Self {
+        LTC681X::new(bus)
     }
 }
 
