@@ -1,3 +1,4 @@
+//! # SPI device implementation for SDO line polling
 use core::fmt::{Debug, Formatter};
 use embedded_hal::digital::OutputPin;
 use embedded_hal::spi::{ErrorKind, ErrorType, Operation, SpiBus, SpiDevice};
