@@ -61,6 +61,7 @@ impl<B: SpiBus, CS: OutputPin> SpiDevice for LatchingSpiDevice<B, CS> {
 
             if result.is_err() {
                 let _ = self.cs.set_high();
+                self.cs_low = false;
                 return result;
             }
         }
