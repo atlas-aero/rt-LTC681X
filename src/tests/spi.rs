@@ -190,3 +190,38 @@ fn test_release_cs_error() {
         _ => panic!("Unexpected error type"),
     }
 }
+
+#[test]
+fn test_cs_pin_state_cached() {
+    let mut sequence = Sequence::new();
+    let mut cs = MockPin::new();
+    cs.expect_set_low()
+        .times(1)
+        .in_sequence(&mut sequence)
+        .returning(move || Ok(()));
+    cs.expect_set_high()
+        .times(1)
+        .in_sequence(&mut sequence)
+        .returning(move || Ok(()));
+    cs.expect_set_low()
+        .times(1)
+        .in_sequence(&mut sequence)
+        .returning(move || Ok(()));
+
+    let mut bus = MockSPIBus::new();
+    bus.expect_write().times(3).returning(move |_| Ok(()));
+
+    let mut device = LatchingSpiDevice::new(bus, cs);
+
+    // CS pin is set low
+    device.transaction(&mut [Operation::Write(&[0x0])]).unwrap();
+
+    // CS pin is already low, so no GPIO interaction
+    device.transaction(&mut [Operation::Write(&[0x0])]).unwrap();
+
+    // CS pin is set high
+    device.release_cs().unwrap();
+
+    // CS pin is set low again
+    device.transaction(&mut [Operation::Write(&[0x0])]).unwrap();
+}
