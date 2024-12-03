@@ -36,8 +36,8 @@ fn test_write() {
 
     let mut device = LatchingSpiDevice::new(bus, cs);
 
-    let mut data = [0x7, 0x4, 0x2, 0x1];
-    device.transaction(&mut [Operation::Write(&mut data)]).unwrap();
+    let data = [0x7, 0x4, 0x2, 0x1];
+    device.transaction(&mut [Operation::Write(&data)]).unwrap();
 }
 
 #[test]
@@ -84,7 +84,7 @@ fn test_bus_error() {
     let mut buffers = ([0x0; 4], [0x0; 4], [0x0; 4], [0x0; 4], [0x0; 4]);
     let operations = [
         Operation::Read(&mut buffers.0),
-        Operation::Write(&mut buffers.1),
+        Operation::Write(&buffers.1),
         Operation::TransferInPlace(&mut buffers.2),
         Operation::Transfer(&mut buffers.3, &buffers.4),
     ];
@@ -125,7 +125,7 @@ fn test_bus_error() {
 #[test]
 fn test_cs_error() {
     let mut buffers = ([0x0; 4], [0x0; 4]);
-    let operations = [Operation::Read(&mut buffers.0), Operation::Write(&mut buffers.1)];
+    let operations = [Operation::Read(&mut buffers.0), Operation::Write(&buffers.1)];
 
     let mut cs = MockPin::new();
     cs.expect_set_low().times(2).returning(move || Err(PinError::Error1));
@@ -160,7 +160,7 @@ fn test_release_cs() {
 
     let mut device = LatchingSpiDevice::new(bus, cs);
 
-    device.transaction(&mut [Operation::Write(&mut [0x0; 4])]).unwrap();
+    device.transaction(&mut [Operation::Write(&[0x0; 4])]).unwrap();
     device.release_cs().unwrap();
 }
 
@@ -182,7 +182,7 @@ fn test_release_cs_error() {
 
     let mut device = LatchingSpiDevice::new(bus, cs);
 
-    device.transaction(&mut [Operation::Write(&mut [0x0; 4])]).unwrap();
+    device.transaction(&mut [Operation::Write(&[0x0; 4])]).unwrap();
     let result = device.release_cs();
 
     match result.unwrap_err() {
