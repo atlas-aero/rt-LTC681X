@@ -53,12 +53,12 @@ pub mod ltc6811;
 pub mod ltc6812;
 pub mod ltc6813;
 pub mod monitor;
+pub mod spi;
 
 pub(crate) mod commands;
 pub(crate) mod pec15;
 
 #[cfg(test)]
 mod mocks;
-mod spi;
 #[cfg(test)]
 mod tests;

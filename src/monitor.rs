@@ -126,7 +126,7 @@
 //! conversions. SDO is pulled high when the device completes conversions.
 //!
 //! This involves controlling the CS pin, as CS needs to stay low until the ADC conversion is finished.
-//! 'crate::spi::LatchingSpiDevice' is implementing this behaviour and is used internally.
+//! [LatchingSpiDevice] is implementing this behaviour and is used internally.
 //!
 //! Please note that if this poll method is used, the SPI bus cannot be used by any other device
 //! until the conversion is complete.
