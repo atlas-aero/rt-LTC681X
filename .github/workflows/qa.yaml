@@ -57,6 +57,8 @@ jobs:
         target:
           - thumbv6m-none-eabi
           - thumbv7m-none-eabi
+          - thumbv8m.main-none-eabihf
+          - riscv32imac-unknown-none-elf
         rust:
           - stable
           - beta
