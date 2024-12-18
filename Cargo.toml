@@ -12,7 +12,7 @@ readme = "README.md"
 documentation = "https://docs.rs/ltc681x"
 
 [dependencies]
-embedded-hal = { version = "0.2.7", features = ["unproven"] }
+embedded-hal = "1.0.0"
 heapless = "0.8.0"
 fixed = "1.15.0"
 

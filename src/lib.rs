@@ -17,24 +17,20 @@
 //! For all details see [monitor] module.
 //!
 //! ````
-//!use ltc681x::example::{ExampleCSPin, ExampleSPIBus};
+//!use ltc681x::example::ExampleSPIDevice;
 //!use ltc681x::ltc6813::{CellSelection, Channel, GPIOSelection, LTC6813};
 //!use ltc681x::monitor::{ADCMode, LTC681X, LTC681XClient, PollClient};
 //!
-//!let spi_bus = ExampleSPIBus::default();
-//!let cs_pin = ExampleCSPin{};
+//!let spi_bus = ExampleSPIDevice::default();
 //!
 //! // LTC6813 device
-//! let mut client: LTC681X<_, _, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus, cs_pin)
-//!     .enable_sdo_polling();
+//! let mut client: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(spi_bus);
 //!
 //! // Starts conversion for cell group 1
 //! client.start_conv_cells(ADCMode::Normal, CellSelection::Group1, true);
 //!
-//! // Poll ADC status
-//! while !client.adc_ready().unwrap() {
-//!     // Conversion is not done yet
-//! }
+//! // Wait until ADC conversion is finished or poll the status
+//! // (s. 'Conversion time' and 'Polling' section(s) of monitor module)
 //!
 //! // Returns the value of cell group A. In case of LTC613: cell 1, 7 and 13
 //! let voltages = client.read_voltages(CellSelection::Group1).unwrap();
@@ -57,6 +53,7 @@ pub mod ltc6811;
 pub mod ltc6812;
 pub mod ltc6813;
 pub mod monitor;
+pub mod spi;
 
 pub(crate) mod commands;
 pub(crate) mod pec15;
