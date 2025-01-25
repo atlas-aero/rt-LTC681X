@@ -135,13 +135,15 @@ impl DeviceMockBuilder {
         self
     }
 
-    pub fn expect_register_write(mut self, expected: &'static [u8; 8]) -> Self {
+    pub fn expect_register_write<const N: usize>(mut self, expected: &'static [&'static [u8]; N]) -> Self {
         self.device.expect_transaction().times(1).returning(move |operation| {
-            assert_eq!(1, operation.len());
+            assert_eq!(N, operation.len());
 
-            match operation[0] {
-                Operation::Write(cmd) => assert_eq!(expected, cmd),
-                _ => panic!("Received unexpected operation type {:?}", operation[0]),
+            for (i, expected) in expected.iter().enumerate() {
+                match operation[i] {
+                    Operation::Write(cmd) => assert_eq!(*expected, cmd),
+                    _ => panic!("Received unexpected operation type {:?}", operation[0]),
+                }
             }
 
             Ok(())
@@ -210,7 +212,7 @@ impl BusMockBuilder {
         self
     }
 
-    pub fn expect_register_write(mut self, expected: &'static [u8; 8]) -> Self {
+    pub fn expect_register_write(mut self, expected: &'static [u8]) -> Self {
         self.bus.expect_write().times(1).returning(move |data| {
             assert_eq!(expected, data);
             Ok(())

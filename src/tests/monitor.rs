@@ -986,8 +986,11 @@ fn test_read_register_sdo_polling_cs_high_error() {
 #[test]
 fn test_write_register_conf_a() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
-        .expect_register_write(&[
+        .expect_register_write(&[&[
+            0b0000_0000,
+            0b0000_0001,
+            0x3D,
+            0x6E,
             0b1111_1000,
             0b0000_0100,
             0b0000_1000,
@@ -996,7 +999,7 @@ fn test_write_register_conf_a() {
             0b0100_0000,
             0xB,
             0x24,
-        ])
+        ]])
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1015,8 +1018,11 @@ fn test_write_register_conf_a() {
 #[test]
 fn test_write_register_conf_b() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0010_0100, 0xB1, 0x9E)
-        .expect_register_write(&[
+        .expect_register_write(&[&[
+            0b0000_0000,
+            0b0010_0100,
+            0xB1,
+            0x9E,
             0b0000_0001,
             0b0000_0110,
             0b0000_1000,
@@ -1025,7 +1031,7 @@ fn test_write_register_conf_b() {
             0b0100_1000,
             0x43,
             0x50,
-        ])
+        ]])
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1044,9 +1050,23 @@ fn test_write_register_conf_b() {
 #[test]
 fn test_write_register_multiple_devices() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0010_0100, 0xB1, 0x9E)
-        .expect_register_write(&[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x22, 0xEE])
-        .expect_register_write(&[0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0x28, 0xC0])
+        .expect_register_write(&[
+            &[
+                0b0000_0000,
+                0b0010_0100,
+                0xB1,
+                0x9E,
+                0x1,
+                0x2,
+                0x3,
+                0x4,
+                0x5,
+                0x6,
+                0x22,
+                0xEE,
+            ],
+            &[0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0x28, 0xC0],
+        ])
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 2> = LTC681X::ltc6813(bus);
@@ -1078,8 +1098,11 @@ fn test_write_register_sdo_polling() {
     cs.expect_set_high().times(1).returning(|| Ok(()));
 
     let bus = BusMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
         .expect_register_write(&[
+            0b0000_0000,
+            0b0000_0001,
+            0x3D,
+            0x6E,
             0b1111_1000,
             0b0000_0100,
             0b0000_1000,
@@ -1127,7 +1150,7 @@ fn test_write_register_sdo_polling_cs_high_error() {
     cs.expect_set_high().times(1).returning(|| Err(PinError::Error1));
 
     let mut bus = MockSPIBus::new();
-    bus.expect_write().times(2).returning(|_| Ok(()));
+    bus.expect_write().times(1).returning(|_| Ok(()));
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::enable_sdo_polling(bus, cs);
 
@@ -1141,8 +1164,11 @@ fn test_write_register_sdo_polling_cs_high_error() {
 #[test]
 fn test_write_configuration_correct_data() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
-        .expect_register_write(&[
+        .expect_register_write(&[&[
+            0b0000_0000,
+            0b0000_0001,
+            0x3D,
+            0x6E,
             0b1111_1000,
             0b0101_0010,
             0b1111_0111,
@@ -1151,9 +1177,12 @@ fn test_write_configuration_correct_data() {
             0b0000_0000,
             0x10,
             0x6C,
-        ])
-        .expect_command(0b0000_0000, 0b0010_0100, 0xB1, 0x9E)
-        .expect_register_write(&[
+        ]])
+        .expect_register_write(&[&[
+            0b0000_0000,
+            0b0010_0100,
+            0xB1,
+            0x9E,
             0b0001_1111,
             0b0000_0001,
             0b0000_0000,
@@ -1162,7 +1191,7 @@ fn test_write_configuration_correct_data() {
             0b0000_0000,
             0x2,
             0x5C,
-        ])
+        ]])
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1179,47 +1208,57 @@ fn test_write_configuration_correct_data() {
 #[test]
 fn test_write_configuration_multiple_devices() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
         .expect_register_write(&[
-            0b1111_1000,
-            0b1110_0001,
-            0b0100_0100,
-            0b1001_1100,
-            0b0000_0000,
-            0b0000_1000,
-            0x66,
-            0xE0,
+            &[
+                0b0000_0000,
+                0b0000_0001,
+                0x3D,
+                0x6E,
+                0b1111_1000,
+                0b1110_0001,
+                0b0100_0100,
+                0b1001_1100,
+                0b0000_0000,
+                0b0000_1000,
+                0x66,
+                0xE0,
+            ],
+            &[
+                0b1010_1000,
+                0b0000_0000,
+                0b0000_0000,
+                0b0000_0000,
+                0b0011_1000,
+                0b0000_0000,
+                0x72,
+                0x5E,
+            ],
         ])
         .expect_register_write(&[
-            0b1010_1000,
-            0b0000_0000,
-            0b0000_0000,
-            0b0000_0000,
-            0b0011_1000,
-            0b0000_0000,
-            0x72,
-            0x5E,
-        ])
-        .expect_command(0b0000_0000, 0b0010_0100, 0xB1, 0x9E)
-        .expect_register_write(&[
-            0b0000_1111,
-            0b0000_0010,
-            0b0000_0000,
-            0b0000_0000,
-            0b0000_0000,
-            0b0000_0000,
-            0xA,
-            0xFA,
-        ])
-        .expect_register_write(&[
-            0b0110_1101,
-            0b0000_0000,
-            0b0000_0000,
-            0b0000_0000,
-            0b0000_0000,
-            0b0000_0000,
-            0x13,
-            0xD6,
+            &[
+                0b0000_0000,
+                0b0010_0100,
+                0xB1,
+                0x9E,
+                0b0000_1111,
+                0b0000_0010,
+                0b0000_0000,
+                0b0000_0000,
+                0b0000_0000,
+                0b0000_0000,
+                0xA,
+                0xFA,
+            ],
+            &[
+                0b0110_1101,
+                0b0000_0000,
+                0b0000_0000,
+                0b0000_0000,
+                0b0000_0000,
+                0b0000_0000,
+                0x13,
+                0xD6,
+            ],
         ])
         .into_mock();
 
@@ -1247,8 +1286,11 @@ fn test_write_configuration_multiple_devices() {
 #[test]
 fn test_write_configuration_ltc6810() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
-        .expect_register_write(&[
+        .expect_register_write(&[&[
+            0b0000_0000,
+            0b0000_0001,
+            0x3D,
+            0x6E,
             0b1111_1000,
             0b0101_0010,
             0b1111_0111,
@@ -1257,7 +1299,7 @@ fn test_write_configuration_ltc6810() {
             0b0000_0000,
             0x10,
             0x6C,
-        ])
+        ]])
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6810, 1> = LTC681X::ltc6810(bus);
@@ -1292,8 +1334,11 @@ fn test_write_configuration_sdo_polling() {
     cs.expect_set_high().times(2).returning(|| Ok(()));
 
     let bus = BusMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
         .expect_register_write(&[
+            0b0000_0000,
+            0b0000_0001,
+            0x3D,
+            0x6E,
             0b1111_1000,
             0b0101_0010,
             0b1111_0111,
@@ -1303,8 +1348,11 @@ fn test_write_configuration_sdo_polling() {
             0x10,
             0x6C,
         ])
-        .expect_command(0b0000_0000, 0b0010_0100, 0xB1, 0x9E)
         .expect_register_write(&[
+            0b0000_0000,
+            0b0010_0100,
+            0xB1,
+            0x9E,
             0b0001_1111,
             0b0000_0001,
             0b0000_0000,
@@ -1350,7 +1398,7 @@ fn test_write_configuration_sdo_polling_cs_high_error() {
     cs.expect_set_high().times(1).returning(|| Err(PinError::Error1));
 
     let mut bus = MockSPIBus::new();
-    bus.expect_write().times(2).returning(move |_| Ok(()));
+    bus.expect_write().times(1).returning(move |_| Ok(()));
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::enable_sdo_polling(bus, cs);
 

@@ -747,20 +747,31 @@ where
             Err(_) => return Err(Error::ReadOnlyRegister),
         };
 
-        self.bus.write(&pre_command).map_err(Error::BusError)?;
+        // Buffer for first operation
+        let mut first_operation = [0xff_u8; 12];
 
-        for item in &data {
-            let mut full_command: [u8; 8] = [0x0; 8];
-            full_command[..6].clone_from_slice(item);
+        // Buffer for operations to daisy-chained devices
+        // As generic_const_exprs feature is not yet supported, the last item is not used (wasted)
+        let mut shifted_data = [[0x0_u8; 8]; L];
 
-            let pec = PEC15::calc(item);
-            full_command[6] = pec[0];
-            full_command[7] = pec[1];
+        // The first operation includes the pre-command + data bytes of master
+        first_operation[..4].copy_from_slice(&pre_command);
+        first_operation[4..10].copy_from_slice(&data[0]);
+        self.add_pec_checksum(&mut first_operation[4..]);
 
-            self.bus.write(&full_command).map_err(Error::BusError)?;
+        let mut operations: Vec<Operation<u8>, L> = Vec::new();
+        let _ = operations.push(Operation::Write(&first_operation));
+
+        // Adding data of daisy-chained devices
+        for (i, item) in shifted_data[..L - 1].iter_mut().enumerate() {
+            item[..6].copy_from_slice(&data[i + 1]);
+            self.add_pec_checksum(item);
+            let _ = operations.push(Operation::Write(item));
         }
 
-        self.poll_method.end_sync_command(&mut self.bus).map_err(Error::BusError)?;
+        self.bus.transaction(&mut operations).map_err(BusError)?;
+
+        self.poll_method.end_sync_command(&mut self.bus).map_err(BusError)?;
         Ok(())
     }
 
