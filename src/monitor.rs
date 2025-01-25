@@ -884,13 +884,18 @@ where
     /// Sends the given command. Calculates and attaches the PEC checksum
     fn send_command(&mut self, command: u16) -> Result<(), B::Error> {
         let mut data = [(command >> 8) as u8, command as u8, 0x0, 0x0];
-        let pec = PEC15::calc(&data[0..2]);
-
-        data[2] = pec[0];
-        data[3] = pec[1];
+        self.add_pec_checksum(&mut data);
 
         self.bus.write(&data)?;
         Ok(())
+    }
+
+    /// Calculates and attaches the PEC15 checksum
+    fn add_pec_checksum(&self, data: &mut [u8]) {
+        let pec = PEC15::calc(&data[0..data.len() - 2]);
+
+        data[data.len() - 2] = pec[0];
+        data[data.len() - 1] = pec[1];
     }
 
     /// Send the given read command and returns the response of all devices in daisy chain
