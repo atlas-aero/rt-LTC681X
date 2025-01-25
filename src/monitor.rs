@@ -292,7 +292,7 @@ use core::fmt::{Debug, Display, Formatter};
 use core::marker::PhantomData;
 use core::slice::Iter;
 use embedded_hal::digital::OutputPin;
-use embedded_hal::spi::{SpiBus, SpiDevice};
+use embedded_hal::spi::{Operation, SpiBus, SpiDevice};
 use fixed::types::I16F16;
 use heapless::Vec;
 
@@ -747,20 +747,31 @@ where
             Err(_) => return Err(Error::ReadOnlyRegister),
         };
 
-        self.bus.write(&pre_command).map_err(Error::BusError)?;
+        // Buffer for first operation
+        let mut first_operation = [0xff_u8; 12];
 
-        for item in &data {
-            let mut full_command: [u8; 8] = [0x0; 8];
-            full_command[..6].clone_from_slice(item);
+        // Buffer for operations to daisy-chained devices
+        // As generic_const_exprs feature is not yet supported, the last item is not used (wasted)
+        let mut shifted_data = [[0x0_u8; 8]; L];
 
-            let pec = PEC15::calc(item);
-            full_command[6] = pec[0];
-            full_command[7] = pec[1];
+        // The first operation includes the pre-command + data bytes of master
+        first_operation[..4].copy_from_slice(&pre_command);
+        first_operation[4..10].copy_from_slice(&data[0]);
+        self.add_pec_checksum(&mut first_operation[4..]);
 
-            self.bus.write(&full_command).map_err(Error::BusError)?;
+        let mut operations: Vec<Operation<u8>, L> = Vec::new();
+        let _ = operations.push(Operation::Write(&first_operation));
+
+        // Adding data of daisy-chained devices
+        for (i, item) in shifted_data[..L - 1].iter_mut().enumerate() {
+            item[..6].copy_from_slice(&data[i + 1]);
+            self.add_pec_checksum(item);
+            let _ = operations.push(Operation::Write(item));
         }
 
-        self.poll_method.end_sync_command(&mut self.bus).map_err(Error::BusError)?;
+        self.bus.transaction(&mut operations).map_err(BusError)?;
+
+        self.poll_method.end_sync_command(&mut self.bus).map_err(BusError)?;
         Ok(())
     }
 
@@ -884,44 +895,73 @@ where
     /// Sends the given command. Calculates and attaches the PEC checksum
     fn send_command(&mut self, command: u16) -> Result<(), B::Error> {
         let mut data = [(command >> 8) as u8, command as u8, 0x0, 0x0];
-        let pec = PEC15::calc(&data[0..2]);
-
-        data[2] = pec[0];
-        data[3] = pec[1];
+        self.add_pec_checksum(&mut data);
 
         self.bus.write(&data)?;
         Ok(())
     }
 
+    /// Calculates and attaches the PEC15 checksum
+    fn add_pec_checksum(&self, data: &mut [u8]) {
+        let pec = PEC15::calc(&data[0..data.len() - 2]);
+
+        data[data.len() - 2] = pec[0];
+        data[data.len() - 1] = pec[1];
+    }
+
     /// Send the given read command and returns the response of all devices in daisy chain
     fn read_daisy_chain(&mut self, command: [u8; 4]) -> Result<[[u16; 3]; L], Error<B>> {
-        self.bus.write(&command).map_err(Error::BusError)?;
+        let data = self.read_trans_daisy_chain(command)?;
 
         let mut result = [[0, 0, 0]; L];
-        for item in result.iter_mut().take(L) {
-            *item = self.read()?;
+        for (i, item) in result.iter_mut().take(L).enumerate() {
+            let response = data[i];
+
+            let pec = PEC15::calc(&response[0..6]);
+            if pec[0] != response[6] || pec[1] != response[7] {
+                return Err(Error::ChecksumMismatch);
+            }
+
+            item[0] = response[0] as u16;
+            item[0] |= (response[1] as u16) << 8;
+
+            item[1] = response[2] as u16;
+            item[1] |= (response[3] as u16) << 8;
+
+            item[2] = response[4] as u16;
+            item[2] |= (response[5] as u16) << 8;
         }
 
         self.poll_method.end_sync_command(&mut self.bus).map_err(Error::BusError)?;
         Ok(result)
     }
 
-    /// Reads a register
-    fn read(&mut self) -> Result<[u16; 3], Error<B>> {
-        let mut result = [0xff_u8; 8];
-        self.bus.read(&mut result).map_err(BusError)?;
+    /// Creates SPI transactions for reading from daisy chain and returns the raw data
+    fn read_trans_daisy_chain(&mut self, command: [u8; 4]) -> Result<[[u8; 8]; L], Error<B>> {
+        let command_write = [
+            command[0], command[1], command[2], command[3], 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        ];
+        let mut command_read = [0xff_u8; 12];
 
-        let pec = PEC15::calc(&result[0..6]);
-        if pec[0] != result[6] || pec[1] != result[7] {
-            return Err(Error::ChecksumMismatch);
+        // Read buffer for all daisy-chained devices
+        // As generic_const_exprs feature is not yet supported the first buffer item will not be used.
+        // This wastes eight bytes of stack memory
+        let mut buffers = [[0xff_u8; 8]; L];
+
+        // Result from connected device will be directly received on command transaction
+        let mut operations: Vec<Operation<u8>, L> = Vec::new();
+        let _ = operations.push(Operation::Transfer(&mut command_read, &command_write));
+
+        // Read operations for all dasi-chained devices
+        for buffer_item in &mut buffers[1..].iter_mut() {
+            operations.push(Operation::Read(buffer_item)).unwrap()
         }
 
-        let mut registers = [result[0] as u16, result[2] as u16, result[4] as u16];
-        registers[0] |= (result[1] as u16) << 8;
-        registers[1] |= (result[3] as u16) << 8;
-        registers[2] |= (result[5] as u16) << 8;
+        self.bus.transaction(&mut operations).map_err(Error::BusError)?;
+        drop(operations);
+        buffers[0].copy_from_slice(&command_read[4..]);
 
-        Ok(registers)
+        Ok(buffers)
     }
 
     /// Calculates the temperature in °C based on raw register value

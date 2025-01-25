@@ -505,8 +505,13 @@ fn test_sdo_polling_cs_error() {
 #[test]
 fn test_read_cell_voltages_register_a() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_0100, 0x07, 0xC2)
-        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_0100,
+            0x07,
+            0xC2,
+            [&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -520,8 +525,13 @@ fn test_read_cell_voltages_register_a() {
 #[test]
 fn test_read_cell_voltages_register_b() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_0110, 0x9A, 0x94)
-        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_0110,
+            0x9A,
+            0x94,
+            [&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -535,8 +545,13 @@ fn test_read_cell_voltages_register_b() {
 #[test]
 fn test_read_cell_voltages_register_c() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1000,
+            0x5E,
+            0x52,
+            [&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -550,8 +565,13 @@ fn test_read_cell_voltages_register_c() {
 #[test]
 fn test_read_cell_voltages_register_d() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1010, 0xC3, 0x4)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1010,
+            0xC3,
+            0x4,
+            [&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -565,8 +585,13 @@ fn test_read_cell_voltages_register_d() {
 #[test]
 fn test_read_cell_voltages_register_e() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
-        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1001,
+            0xD5,
+            0x60,
+            [&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -580,8 +605,13 @@ fn test_read_cell_voltages_register_e() {
 #[test]
 fn test_read_cell_voltages_register_f() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1011, 0x48, 0x36)
-        .expect_register_read(&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1011,
+            0x48,
+            0x36,
+            [&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -595,10 +625,17 @@ fn test_read_cell_voltages_register_f() {
 #[test]
 fn test_read_cell_voltages_multiple_devices() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1010, 0xC3, 0x4)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
-        .expect_register_read(&[0x53, 0x64, 0x76, 0x1E, 0xB9, 0x1E, 0x1B, 0xC6])
-        .expect_register_read(&[0xA2, 0x62, 0x05, 0x1F, 0xC9, 0x20, 0xEE, 0x94])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1010,
+            0xC3,
+            0x4,
+            [
+                &[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE],
+                &[0x53, 0x64, 0x76, 0x1E, 0xB9, 0x1E, 0x1B, 0xC6],
+                &[0xA2, 0x62, 0x05, 0x1F, 0xC9, 0x20, 0xEE, 0x94],
+            ],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 3> = LTC681X::ltc6813(bus);
@@ -621,8 +658,13 @@ fn test_read_cell_voltages_multiple_devices() {
 #[test]
 fn test_read_cell_voltages_pec_error() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1011, 0x48, 0x36)
-        .expect_register_read(&[0x2A, 0x63, 0x8E, 0x1E, 0xEC, 0x1F, 0x11, 0x0D])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1011,
+            0x48,
+            0x36,
+            [&[0x2A, 0x63, 0x8E, 0x1E, 0xEC, 0x1F, 0x11, 0x0D]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -651,8 +693,13 @@ fn test_read_cell_voltages_transfer_error() {
 #[test]
 fn test_read_register_aux_a() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1100, 0xEF, 0xCC)
-        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1100,
+            0xEF,
+            0xCC,
+            [&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -666,8 +713,13 @@ fn test_read_register_aux_a() {
 #[test]
 fn test_read_register_aux_b() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1110, 0x72, 0x9A)
-        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1110,
+            0x72,
+            0x9A,
+            [&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -681,8 +733,13 @@ fn test_read_register_aux_b() {
 #[test]
 fn test_read_register_aux_c() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1101, 0x64, 0xFE)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1101,
+            0x64,
+            0xFE,
+            [&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -696,8 +753,13 @@ fn test_read_register_aux_c() {
 #[test]
 fn test_read_register_aux_d() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1111, 0xF9, 0xA8)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1111,
+            0xF9,
+            0xA8,
+            [&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -711,8 +773,13 @@ fn test_read_register_aux_d() {
 #[test]
 fn test_read_register_status_a() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0001_0000, 0xED, 0x72)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(
+            0b0000_0000,
+            0b0001_0000,
+            0xED,
+            0x72,
+            [&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -726,8 +793,13 @@ fn test_read_register_status_a() {
 #[test]
 fn test_read_register_status_b() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0001_0010, 0x70, 0x24)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(
+            0b0000_0000,
+            0b0001_0010,
+            0x70,
+            0x24,
+            [&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -741,8 +813,13 @@ fn test_read_register_status_b() {
 #[test]
 fn test_read_register_conf_a() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_0010, 0x2B, 0xA)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_0010,
+            0x2B,
+            0xA,
+            [&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -756,8 +833,13 @@ fn test_read_register_conf_a() {
 #[test]
 fn test_read_register_conf_b() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0010_0110, 0x2C, 0xC8)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(
+            0b0000_0000,
+            0b0010_0110,
+            0x2C,
+            0xC8,
+            [&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -771,10 +853,17 @@ fn test_read_register_conf_b() {
 #[test]
 fn test_read_register_multiple_devices() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1111, 0xF9, 0xA8)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
-        .expect_register_read(&[0x53, 0x64, 0x76, 0x1E, 0xB9, 0x1E, 0x1B, 0xC6])
-        .expect_register_read(&[0xA2, 0x62, 0x05, 0x1F, 0xC9, 0x20, 0xEE, 0x94])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1111,
+            0xF9,
+            0xA8,
+            [
+                &[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE],
+                &[0x53, 0x64, 0x76, 0x1E, 0xB9, 0x1E, 0x1B, 0xC6],
+                &[0xA2, 0x62, 0x05, 0x1F, 0xC9, 0x20, 0xEE, 0x94],
+            ],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 3> = LTC681X::ltc6813(bus);
@@ -797,8 +886,13 @@ fn test_read_register_multiple_devices() {
 #[test]
 fn test_read_register_pec_error() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1111, 0xF9, 0xA8)
-        .expect_register_read(&[0x2A, 0x63, 0x8E, 0x1E, 0xEC, 0x1F, 0x11, 0x0D])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1111,
+            0xF9,
+            0xA8,
+            [&[0x2A, 0x63, 0x8E, 0x1E, 0xEC, 0x1F, 0x11, 0x0D]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -831,8 +925,13 @@ fn test_read_register_sdo_polling() {
     cs.expect_set_high().times(1).returning(|| Ok(()));
 
     let bus = BusMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0010_0110, 0x2C, 0xC8)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(
+            0b0000_0000,
+            0b0010_0110,
+            0x2C,
+            0xC8,
+            &[[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::enable_sdo_polling(bus, cs);
@@ -866,8 +965,13 @@ fn test_read_register_sdo_polling_cs_high_error() {
     cs.expect_set_high().times(1).returning(|| Err(PinError::Error1));
 
     let bus = BusMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0010_0110, 0x2C, 0xC8)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(
+            0b0000_0000,
+            0b0010_0110,
+            0x2C,
+            0xC8,
+            &[[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::enable_sdo_polling(bus, cs);
@@ -882,8 +986,11 @@ fn test_read_register_sdo_polling_cs_high_error() {
 #[test]
 fn test_write_register_conf_a() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
-        .expect_register_write(&[
+        .expect_register_write(&[&[
+            0b0000_0000,
+            0b0000_0001,
+            0x3D,
+            0x6E,
             0b1111_1000,
             0b0000_0100,
             0b0000_1000,
@@ -892,7 +999,7 @@ fn test_write_register_conf_a() {
             0b0100_0000,
             0xB,
             0x24,
-        ])
+        ]])
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -911,8 +1018,11 @@ fn test_write_register_conf_a() {
 #[test]
 fn test_write_register_conf_b() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0010_0100, 0xB1, 0x9E)
-        .expect_register_write(&[
+        .expect_register_write(&[&[
+            0b0000_0000,
+            0b0010_0100,
+            0xB1,
+            0x9E,
             0b0000_0001,
             0b0000_0110,
             0b0000_1000,
@@ -921,7 +1031,7 @@ fn test_write_register_conf_b() {
             0b0100_1000,
             0x43,
             0x50,
-        ])
+        ]])
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -940,9 +1050,23 @@ fn test_write_register_conf_b() {
 #[test]
 fn test_write_register_multiple_devices() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0010_0100, 0xB1, 0x9E)
-        .expect_register_write(&[0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x22, 0xEE])
-        .expect_register_write(&[0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0x28, 0xC0])
+        .expect_register_write(&[
+            &[
+                0b0000_0000,
+                0b0010_0100,
+                0xB1,
+                0x9E,
+                0x1,
+                0x2,
+                0x3,
+                0x4,
+                0x5,
+                0x6,
+                0x22,
+                0xEE,
+            ],
+            &[0x7, 0x8, 0x9, 0xA, 0xB, 0xC, 0x28, 0xC0],
+        ])
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 2> = LTC681X::ltc6813(bus);
@@ -974,8 +1098,11 @@ fn test_write_register_sdo_polling() {
     cs.expect_set_high().times(1).returning(|| Ok(()));
 
     let bus = BusMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
         .expect_register_write(&[
+            0b0000_0000,
+            0b0000_0001,
+            0x3D,
+            0x6E,
             0b1111_1000,
             0b0000_0100,
             0b0000_1000,
@@ -1023,7 +1150,7 @@ fn test_write_register_sdo_polling_cs_high_error() {
     cs.expect_set_high().times(1).returning(|| Err(PinError::Error1));
 
     let mut bus = MockSPIBus::new();
-    bus.expect_write().times(2).returning(|_| Ok(()));
+    bus.expect_write().times(1).returning(|_| Ok(()));
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::enable_sdo_polling(bus, cs);
 
@@ -1037,8 +1164,11 @@ fn test_write_register_sdo_polling_cs_high_error() {
 #[test]
 fn test_write_configuration_correct_data() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
-        .expect_register_write(&[
+        .expect_register_write(&[&[
+            0b0000_0000,
+            0b0000_0001,
+            0x3D,
+            0x6E,
             0b1111_1000,
             0b0101_0010,
             0b1111_0111,
@@ -1047,9 +1177,12 @@ fn test_write_configuration_correct_data() {
             0b0000_0000,
             0x10,
             0x6C,
-        ])
-        .expect_command(0b0000_0000, 0b0010_0100, 0xB1, 0x9E)
-        .expect_register_write(&[
+        ]])
+        .expect_register_write(&[&[
+            0b0000_0000,
+            0b0010_0100,
+            0xB1,
+            0x9E,
             0b0001_1111,
             0b0000_0001,
             0b0000_0000,
@@ -1058,7 +1191,7 @@ fn test_write_configuration_correct_data() {
             0b0000_0000,
             0x2,
             0x5C,
-        ])
+        ]])
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1075,47 +1208,57 @@ fn test_write_configuration_correct_data() {
 #[test]
 fn test_write_configuration_multiple_devices() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
         .expect_register_write(&[
-            0b1111_1000,
-            0b1110_0001,
-            0b0100_0100,
-            0b1001_1100,
-            0b0000_0000,
-            0b0000_1000,
-            0x66,
-            0xE0,
+            &[
+                0b0000_0000,
+                0b0000_0001,
+                0x3D,
+                0x6E,
+                0b1111_1000,
+                0b1110_0001,
+                0b0100_0100,
+                0b1001_1100,
+                0b0000_0000,
+                0b0000_1000,
+                0x66,
+                0xE0,
+            ],
+            &[
+                0b1010_1000,
+                0b0000_0000,
+                0b0000_0000,
+                0b0000_0000,
+                0b0011_1000,
+                0b0000_0000,
+                0x72,
+                0x5E,
+            ],
         ])
         .expect_register_write(&[
-            0b1010_1000,
-            0b0000_0000,
-            0b0000_0000,
-            0b0000_0000,
-            0b0011_1000,
-            0b0000_0000,
-            0x72,
-            0x5E,
-        ])
-        .expect_command(0b0000_0000, 0b0010_0100, 0xB1, 0x9E)
-        .expect_register_write(&[
-            0b0000_1111,
-            0b0000_0010,
-            0b0000_0000,
-            0b0000_0000,
-            0b0000_0000,
-            0b0000_0000,
-            0xA,
-            0xFA,
-        ])
-        .expect_register_write(&[
-            0b0110_1101,
-            0b0000_0000,
-            0b0000_0000,
-            0b0000_0000,
-            0b0000_0000,
-            0b0000_0000,
-            0x13,
-            0xD6,
+            &[
+                0b0000_0000,
+                0b0010_0100,
+                0xB1,
+                0x9E,
+                0b0000_1111,
+                0b0000_0010,
+                0b0000_0000,
+                0b0000_0000,
+                0b0000_0000,
+                0b0000_0000,
+                0xA,
+                0xFA,
+            ],
+            &[
+                0b0110_1101,
+                0b0000_0000,
+                0b0000_0000,
+                0b0000_0000,
+                0b0000_0000,
+                0b0000_0000,
+                0x13,
+                0xD6,
+            ],
         ])
         .into_mock();
 
@@ -1143,8 +1286,11 @@ fn test_write_configuration_multiple_devices() {
 #[test]
 fn test_write_configuration_ltc6810() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
-        .expect_register_write(&[
+        .expect_register_write(&[&[
+            0b0000_0000,
+            0b0000_0001,
+            0x3D,
+            0x6E,
             0b1111_1000,
             0b0101_0010,
             0b1111_0111,
@@ -1153,7 +1299,7 @@ fn test_write_configuration_ltc6810() {
             0b0000_0000,
             0x10,
             0x6C,
-        ])
+        ]])
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6810, 1> = LTC681X::ltc6810(bus);
@@ -1188,8 +1334,11 @@ fn test_write_configuration_sdo_polling() {
     cs.expect_set_high().times(2).returning(|| Ok(()));
 
     let bus = BusMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_0001, 0x3D, 0x6E)
         .expect_register_write(&[
+            0b0000_0000,
+            0b0000_0001,
+            0x3D,
+            0x6E,
             0b1111_1000,
             0b0101_0010,
             0b1111_0111,
@@ -1199,8 +1348,11 @@ fn test_write_configuration_sdo_polling() {
             0x10,
             0x6C,
         ])
-        .expect_command(0b0000_0000, 0b0010_0100, 0xB1, 0x9E)
         .expect_register_write(&[
+            0b0000_0000,
+            0b0010_0100,
+            0xB1,
+            0x9E,
             0b0001_1111,
             0b0000_0001,
             0b0000_0000,
@@ -1246,7 +1398,7 @@ fn test_write_configuration_sdo_polling_cs_high_error() {
     cs.expect_set_high().times(1).returning(|| Err(PinError::Error1));
 
     let mut bus = MockSPIBus::new();
-    bus.expect_write().times(2).returning(move |_| Ok(()));
+    bus.expect_write().times(1).returning(move |_| Ok(()));
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::enable_sdo_polling(bus, cs);
 
@@ -1261,14 +1413,29 @@ fn test_write_configuration_sdo_polling_cs_high_error() {
 fn test_read_voltages_cell_group_1() {
     let bus = DeviceMockBuilder::new()
         // Register A
-        .expect_command(0b0000_0000, 0b0000_0100, 0x07, 0xC2)
-        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_0100,
+            0x07,
+            0xC2,
+            [&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C]],
+        )
         // Register C
-        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1000,
+            0x5E,
+            0x52,
+            [&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
         // Register E
-        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
-        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1001,
+            0xD5,
+            0x60,
+            [&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1290,14 +1457,29 @@ fn test_read_voltages_cell_group_1() {
 fn test_read_voltages_cell_group_2() {
     let bus = DeviceMockBuilder::new()
         // Register A
-        .expect_command(0b0000_0000, 0b0000_0100, 0x07, 0xC2)
-        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_0100,
+            0x07,
+            0xC2,
+            [&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C]],
+        )
         // Register C
-        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1000,
+            0x5E,
+            0x52,
+            [&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
         // Register E
-        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
-        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1001,
+            0xD5,
+            0x60,
+            [&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1319,14 +1501,29 @@ fn test_read_voltages_cell_group_2() {
 fn test_read_voltages_cell_group_3() {
     let bus = DeviceMockBuilder::new()
         // Register A
-        .expect_command(0b0000_0000, 0b0000_0100, 0x07, 0xC2)
-        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_0100,
+            0x07,
+            0xC2,
+            [&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C]],
+        )
         // Register C
-        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1000,
+            0x5E,
+            0x52,
+            [&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
         // Register E
-        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
-        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1001,
+            0xD5,
+            0x60,
+            [&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1348,14 +1545,29 @@ fn test_read_voltages_cell_group_3() {
 fn test_read_voltages_cell_group_4() {
     let bus = DeviceMockBuilder::new()
         // Register B
-        .expect_command(0b0000_0000, 0b0000_0110, 0x9A, 0x94)
-        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_0110,
+            0x9A,
+            0x94,
+            [&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94]],
+        )
         // Register D
-        .expect_command(0b0000_0000, 0b0000_1010, 0xC3, 0x4)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1010,
+            0xC3,
+            0x4,
+            [&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE]],
+        )
         // Register F
-        .expect_command(0b0000_0000, 0b0000_1011, 0x48, 0x36)
-        .expect_register_read(&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1011,
+            0x48,
+            0x36,
+            [&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1377,14 +1589,29 @@ fn test_read_voltages_cell_group_4() {
 fn test_read_voltages_cell_group_5() {
     let bus = DeviceMockBuilder::new()
         // Register B
-        .expect_command(0b0000_0000, 0b0000_0110, 0x9A, 0x94)
-        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_0110,
+            0x9A,
+            0x94,
+            [&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94]],
+        )
         // Register D
-        .expect_command(0b0000_0000, 0b0000_1010, 0xC3, 0x4)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1010,
+            0xC3,
+            0x4,
+            [&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE]],
+        )
         // Register F
-        .expect_command(0b0000_0000, 0b0000_1011, 0x48, 0x36)
-        .expect_register_read(&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1011,
+            0x48,
+            0x36,
+            [&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1406,14 +1633,29 @@ fn test_read_voltages_cell_group_5() {
 fn test_read_voltages_cell_group_6() {
     let bus = DeviceMockBuilder::new()
         // Register B
-        .expect_command(0b0000_0000, 0b0000_0110, 0x9A, 0x94)
-        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_0110,
+            0x9A,
+            0x94,
+            [&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94]],
+        )
         // Register D
-        .expect_command(0b0000_0000, 0b0000_1010, 0xC3, 0x4)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1010,
+            0xC3,
+            0x4,
+            [&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE]],
+        )
         // Register F
-        .expect_command(0b0000_0000, 0b0000_1011, 0x48, 0x36)
-        .expect_register_read(&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1011,
+            0x48,
+            0x36,
+            [&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1435,23 +1677,53 @@ fn test_read_voltages_cell_group_6() {
 fn test_read_voltages_cell_all() {
     let bus = DeviceMockBuilder::new()
         // Register A
-        .expect_command(0b0000_0000, 0b0000_0100, 0x07, 0xC2)
-        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_0100,
+            0x07,
+            0xC2,
+            [&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C]],
+        )
         // Register C
-        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1000,
+            0x5E,
+            0x52,
+            [&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
         // Register E
-        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
-        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1001,
+            0xD5,
+            0x60,
+            [&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA]],
+        )
         // Register B
-        .expect_command(0b0000_0000, 0b0000_0110, 0x9A, 0x94)
-        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_0110,
+            0x9A,
+            0x94,
+            [&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94]],
+        )
         // Register D
-        .expect_command(0b0000_0000, 0b0000_1010, 0xC3, 0x4)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1010,
+            0xC3,
+            0x4,
+            [&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE]],
+        )
         // Register F
-        .expect_command(0b0000_0000, 0b0000_1011, 0x48, 0x36)
-        .expect_register_read(&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1011,
+            0x48,
+            0x36,
+            [&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1519,17 +1791,38 @@ fn test_read_voltages_cell_all() {
 fn test_read_voltages_cell_multiple_devices() {
     let bus = DeviceMockBuilder::new()
         // Register A
-        .expect_command(0b0000_0000, 0b0000_0100, 0x07, 0xC2)
-        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
-        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_0100,
+            0x07,
+            0xC2,
+            [
+                &[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C],
+                &[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94],
+            ],
+        )
         // Register C
-        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1000,
+            0x5E,
+            0x52,
+            [
+                &[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42],
+                &[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE],
+            ],
+        )
         // Register E
-        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
-        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
-        .expect_register_read(&[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1001,
+            0xD5,
+            0x60,
+            [
+                &[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA],
+                &[0x00, 0x63, 0x2F, 0x1F, 0x8B, 0x1F, 0xC1, 0x68],
+            ],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 2> = LTC681X::ltc6813(bus);
@@ -1558,11 +1851,21 @@ fn test_read_voltages_cell_multiple_devices() {
 fn test_read_voltages_gpio_group_1() {
     let bus = DeviceMockBuilder::new()
         // Register A
-        .expect_command(0b0000_0000, 0b0000_1100, 0xEF, 0xCC)
-        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1100,
+            0xEF,
+            0xCC,
+            [&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C]],
+        )
         // Register C
-        .expect_command(0b0000_0000, 0b0000_1101, 0x64, 0xFE)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1101,
+            0x64,
+            0xFE,
+            [&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1581,11 +1884,21 @@ fn test_read_voltages_gpio_group_1() {
 fn test_read_voltages_gpio_group_2() {
     let bus = DeviceMockBuilder::new()
         // Register A
-        .expect_command(0b0000_0000, 0b0000_1100, 0xEF, 0xCC)
-        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1100,
+            0xEF,
+            0xCC,
+            [&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C]],
+        )
         // Register C
-        .expect_command(0b0000_0000, 0b0000_1101, 0x64, 0xFE)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1101,
+            0x64,
+            0xFE,
+            [&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1604,11 +1917,21 @@ fn test_read_voltages_gpio_group_2() {
 fn test_read_voltages_gpio_group_3() {
     let bus = DeviceMockBuilder::new()
         // Register A
-        .expect_command(0b0000_0000, 0b0000_1100, 0xEF, 0xCC)
-        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1100,
+            0xEF,
+            0xCC,
+            [&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C]],
+        )
         // Register C
-        .expect_command(0b0000_0000, 0b0000_1101, 0x64, 0xFE)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1101,
+            0x64,
+            0xFE,
+            [&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1627,11 +1950,21 @@ fn test_read_voltages_gpio_group_3() {
 fn test_read_voltages_gpio_group_4() {
     let bus = DeviceMockBuilder::new()
         // Register D
-        .expect_command(0b0000_0000, 0b0000_1110, 0x72, 0x9A)
-        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1110,
+            0x72,
+            0x9A,
+            [&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94]],
+        )
         // Register B
-        .expect_command(0b0000_0000, 0b0000_1111, 0xF9, 0xA8)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1111,
+            0xF9,
+            0xA8,
+            [&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1650,8 +1983,13 @@ fn test_read_voltages_gpio_group_4() {
 fn test_read_voltages_gpio_group_5() {
     let bus = DeviceMockBuilder::new()
         // Register B
-        .expect_command(0b0000_0000, 0b0000_1110, 0x72, 0x9A)
-        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1110,
+            0x72,
+            0x9A,
+            [&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1667,8 +2005,13 @@ fn test_read_voltages_gpio_group_5() {
 fn test_read_voltages_gpio_group_6() {
     let bus = DeviceMockBuilder::new()
         // Register B
-        .expect_command(0b0000_0000, 0b0000_1110, 0x72, 0x9A)
-        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1110,
+            0x72,
+            0x9A,
+            [&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1684,17 +2027,37 @@ fn test_read_voltages_gpio_group_6() {
 fn test_read_voltages_gpio_all() {
     let bus = DeviceMockBuilder::new()
         // Register A
-        .expect_command(0b0000_0000, 0b0000_1100, 0xEF, 0xCC)
-        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1100,
+            0xEF,
+            0xCC,
+            [&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C]],
+        )
         // Register C
-        .expect_command(0b0000_0000, 0b0000_1101, 0x64, 0xFE)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1101,
+            0x64,
+            0xFE,
+            [&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
         // Register D
-        .expect_command(0b0000_0000, 0b0000_1110, 0x72, 0x9A)
-        .expect_register_read(&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1110,
+            0x72,
+            0x9A,
+            [&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94]],
+        )
         // Register B
-        .expect_command(0b0000_0000, 0b0000_1111, 0xF9, 0xA8)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1111,
+            0xF9,
+            0xA8,
+            [&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1760,14 +2123,29 @@ fn test_read_voltages_sdo_polling() {
 
     let bus = BusMockBuilder::new()
         // Register A
-        .expect_command(0b0000_0000, 0b0000_0100, 0x07, 0xC2)
-        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_0100,
+            0x07,
+            0xC2,
+            &[[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C]],
+        )
         // Register C
-        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1000,
+            0x5E,
+            0x52,
+            &[[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
         // Register E
-        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
-        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1001,
+            0xD5,
+            0x60,
+            &[[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::enable_sdo_polling(bus, cs);
@@ -1809,8 +2187,13 @@ fn test_read_voltages_sdo_polling_cs_high_error() {
 
     let bus = BusMockBuilder::new()
         // Register A
-        .expect_command(0b0000_0000, 0b0000_0100, 0x07, 0xC2)
-        .expect_register_read(&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_0100,
+            0x07,
+            0xC2,
+            &[[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::enable_sdo_polling(bus, cs);
@@ -1825,10 +2208,20 @@ fn test_read_voltages_sdo_polling_cs_high_error() {
 #[test]
 fn test_ltc6813_read_overlap_results() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
-        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
-        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1000,
+            0x5E,
+            0x52,
+            [&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1001,
+            0xD5,
+            0x60,
+            [&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1843,10 +2236,20 @@ fn test_ltc6813_read_overlap_results() {
 #[test]
 fn test_ltc6812_read_overlap_results() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
-        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
-        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1000,
+            0x5E,
+            0x52,
+            [&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1001,
+            0xD5,
+            0x60,
+            [&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6812, 1> = LTC681X::ltc6812(bus);
@@ -1861,8 +2264,13 @@ fn test_ltc6812_read_overlap_results() {
 #[test]
 fn test_ltc6811_read_overlap_results() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1000,
+            0x5E,
+            0x52,
+            [&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6811, 1> = LTC681X::ltc6811(bus);
@@ -1890,12 +2298,26 @@ fn test_ltc6810_read_overlap_results() {
 #[test]
 fn test_read_overlap_results_multiple_devices() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
-        .expect_register_read(&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE])
-        .expect_register_read(&[0x53, 0x64, 0x76, 0x1E, 0xB9, 0x1E, 0x1B, 0xC6])
-        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
-        .expect_register_read(&[0xA2, 0x62, 0x05, 0x1F, 0xC9, 0x20, 0xEE, 0x94])
-        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1000,
+            0x5E,
+            0x52,
+            [
+                &[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE],
+                &[0x53, 0x64, 0x76, 0x1E, 0xB9, 0x1E, 0x1B, 0xC6],
+            ],
+        )
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1001,
+            0xD5,
+            0x60,
+            [
+                &[0xA2, 0x62, 0x05, 0x1F, 0xC9, 0x20, 0xEE, 0x94],
+                &[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA],
+            ],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 2> = LTC681X::ltc6813(bus);
@@ -1916,8 +2338,13 @@ fn test_read_overlap_results_multiple_devices() {
 #[test]
 fn test_read_overlap_result_pec_error() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
-        .expect_register_read(&[0x2A, 0x63, 0x8E, 0x1E, 0xEC, 0x1F, 0x11, 0x0D])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1000,
+            0x5E,
+            0x52,
+            [&[0x2A, 0x63, 0x8E, 0x1E, 0xEC, 0x1F, 0x11, 0x0D]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -1950,10 +2377,20 @@ fn test_read_overlap_results_sdo_polling() {
     cs.expect_set_high().times(2).returning(|| Ok(()));
 
     let bus = BusMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
-        .expect_command(0b0000_0000, 0b0000_1001, 0xD5, 0x60)
-        .expect_register_read(&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1000,
+            0x5E,
+            0x52,
+            &[[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1001,
+            0xD5,
+            0x60,
+            &[[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::enable_sdo_polling(bus, cs);
@@ -1987,8 +2424,13 @@ fn test_read_overlap_results_sdo_polling_cs_high_error() {
     cs.expect_set_high().times(1).returning(|| Err(PinError::Error1));
 
     let bus = BusMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0000_1000, 0x5E, 0x52)
-        .expect_register_read(&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42])
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1000,
+            0x5E,
+            0x52,
+            &[[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::enable_sdo_polling(bus, cs);
@@ -2003,10 +2445,20 @@ fn test_read_overlap_results_sdo_polling_cs_high_error() {
 #[test]
 fn test_ltc6813_read_internal_device_parameters() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0001_0000, 0xED, 0x72)
-        .expect_register_read(&[0x12, 0x62, 0xA8, 0x62, 0x00, 0x7D, 0x31, 0x8A])
-        .expect_command(0b0000_0000, 0b0001_0010, 0x70, 0x24)
-        .expect_register_read(&[0x00, 0xC8, 0x00, 0x66, 0x00, 0x1B, 0xF1, 0x40])
+        .expect_register_read(
+            0b0000_0000,
+            0b0001_0000,
+            0xED,
+            0x72,
+            [&[0x12, 0x62, 0xA8, 0x62, 0x00, 0x7D, 0x31, 0x8A]],
+        )
+        .expect_register_read(
+            0b0000_0000,
+            0b0001_0010,
+            0x70,
+            0x24,
+            [&[0x00, 0xC8, 0x00, 0x66, 0x00, 0x1B, 0xF1, 0x40]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -2023,10 +2475,20 @@ fn test_ltc6813_read_internal_device_parameters() {
 #[test]
 fn test_ltc6813_read_internal_device_parameters_temp_overflow() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0001_0000, 0xED, 0x72)
-        .expect_register_read(&[0x12, 0x62, 0xF1, 0xD1, 0x00, 0x7D, 0xE6, 0x12])
-        .expect_command(0b0000_0000, 0b0001_0010, 0x70, 0x24)
-        .expect_register_read(&[0x00, 0xC8, 0x00, 0x66, 0x00, 0x1B, 0xF1, 0x40])
+        .expect_register_read(
+            0b0000_0000,
+            0b0001_0000,
+            0xED,
+            0x72,
+            [&[0x12, 0x62, 0xF1, 0xD1, 0x00, 0x7D, 0xE6, 0x12]],
+        )
+        .expect_register_read(
+            0b0000_0000,
+            0b0001_0010,
+            0x70,
+            0x24,
+            [&[0x00, 0xC8, 0x00, 0x66, 0x00, 0x1B, 0xF1, 0x40]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -2039,12 +2501,26 @@ fn test_ltc6813_read_internal_device_parameters_temp_overflow() {
 #[test]
 fn test_ltc6813_read_internal_device_parameters_multiple_devices() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0001_0000, 0xED, 0x72)
-        .expect_register_read(&[0x12, 0x62, 0xA8, 0x62, 0x00, 0x7D, 0x31, 0x8A])
-        .expect_register_read(&[0x1A, 0x59, 0x74, 0x50, 0x60, 0x6D, 0x89, 0xD8])
-        .expect_command(0b0000_0000, 0b0001_0010, 0x70, 0x24)
-        .expect_register_read(&[0x00, 0xC8, 0x00, 0x66, 0x00, 0x1B, 0xF1, 0x40])
-        .expect_register_read(&[0x68, 0xBF, 0x00, 0x56, 0x00, 0x2B, 0x5A, 0xC4])
+        .expect_register_read(
+            0b0000_0000,
+            0b0001_0000,
+            0xED,
+            0x72,
+            [
+                &[0x12, 0x62, 0xA8, 0x62, 0x00, 0x7D, 0x31, 0x8A],
+                &[0x1A, 0x59, 0x74, 0x50, 0x60, 0x6D, 0x89, 0xD8],
+            ],
+        )
+        .expect_register_read(
+            0b0000_0000,
+            0b0001_0010,
+            0x70,
+            0x24,
+            [
+                &[0x00, 0xC8, 0x00, 0x66, 0x00, 0x1B, 0xF1, 0x40],
+                &[0x68, 0xBF, 0x00, 0x56, 0x00, 0x2B, 0x5A, 0xC4],
+            ],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, _, 2> = LTC681X::ltc6813(bus);
@@ -2066,8 +2542,13 @@ fn test_ltc6813_read_internal_device_parameters_multiple_devices() {
 #[test]
 fn test_read_internal_device_parameters_pec_error() {
     let bus = DeviceMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0001_0000, 0xED, 0x72)
-        .expect_register_read(&[0x2A, 0x63, 0x8E, 0x1E, 0xEC, 0x1F, 0x11, 0x0D])
+        .expect_register_read(
+            0b0000_0000,
+            0b0001_0000,
+            0xED,
+            0x72,
+            [&[0x2A, 0x63, 0x8E, 0x1E, 0xEC, 0x1F, 0x11, 0x0D]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::ltc6813(bus);
@@ -2100,10 +2581,20 @@ fn test_read_internal_device_parameters_sdo_polling() {
     cs.expect_set_high().times(2).returning(|| Ok(()));
 
     let bus = BusMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0001_0000, 0xED, 0x72)
-        .expect_register_read(&[0x12, 0x62, 0xA8, 0x62, 0x00, 0x7D, 0x31, 0x8A])
-        .expect_command(0b0000_0000, 0b0001_0010, 0x70, 0x24)
-        .expect_register_read(&[0x00, 0xC8, 0x00, 0x66, 0x00, 0x1B, 0xF1, 0x40])
+        .expect_register_read(
+            0b0000_0000,
+            0b0001_0000,
+            0xED,
+            0x72,
+            &[[0x12, 0x62, 0xA8, 0x62, 0x00, 0x7D, 0x31, 0x8A]],
+        )
+        .expect_register_read(
+            0b0000_0000,
+            0b0001_0010,
+            0x70,
+            0x24,
+            &[[0x00, 0xC8, 0x00, 0x66, 0x00, 0x1B, 0xF1, 0x40]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::enable_sdo_polling(bus, cs);
@@ -2140,8 +2631,13 @@ fn test_read_internal_device_parameters_sdo_polling_cs_high_error() {
     cs.expect_set_high().times(1).returning(|| Err(PinError::Error1));
 
     let bus = BusMockBuilder::new()
-        .expect_command(0b0000_0000, 0b0001_0000, 0xED, 0x72)
-        .expect_register_read(&[0x12, 0x62, 0xA8, 0x62, 0x00, 0x7D, 0x31, 0x8A])
+        .expect_register_read(
+            0b0000_0000,
+            0b0001_0000,
+            0xED,
+            0x72,
+            &[[0x12, 0x62, 0xA8, 0x62, 0x00, 0x7D, 0x31, 0x8A]],
+        )
         .into_mock();
 
     let mut monitor: LTC681X<_, _, LTC6813, 1> = LTC681X::enable_sdo_polling(bus, cs);
