@@ -91,15 +91,42 @@ impl DeviceMockBuilder {
         self
     }
 
-    pub fn expect_register_read(mut self, data: &'static [u8; 8]) -> Self {
-        self.device.expect_transaction().times(1).returning(move |operation| {
-            assert_eq!(1, operation.len());
+    pub fn expect_register_read<const N: usize>(
+        mut self,
+        cmd0: u8,
+        cmd1: u8,
+        pec0: u8,
+        pec1: u8,
+        data: [&'static [u8; 8]; N],
+    ) -> Self {
+        self.device.expect_transaction().times(1).returning(move |operations| {
+            assert_eq!(N, operations.len());
 
-            match &mut operation[0] {
-                Operation::Read(buffer) => {
-                    buffer.copy_from_slice(data);
+            for (i, operation) in operations.iter_mut().enumerate() {
+                if i == 0 {
+                    match operation {
+                        Operation::Transfer(buffer, command) => {
+                            assert_eq!(12, buffer.len());
+                            assert_eq!(12, command.len());
+
+                            assert_eq!(cmd0, command[0]);
+                            assert_eq!(cmd1, command[1]);
+                            assert_eq!(pec0, command[2]);
+                            assert_eq!(pec1, command[3]);
+
+                            buffer[4..].copy_from_slice(data[i]);
+                        }
+                        _ => panic!("Received unexpected operation type {:?}", operations[0]),
+                    }
+                } else {
+                    match operation {
+                        Operation::Read(buffer) => {
+                            assert_eq!(8, buffer.len());
+                            buffer.copy_from_slice(data[i]);
+                        }
+                        _ => panic!("Received unexpected operation type {:?}", operations[0]),
+                    }
                 }
-                _ => panic!("Received unexpected operation type {:?}", operation[0]),
             }
 
             Ok(())
@@ -151,11 +178,34 @@ impl BusMockBuilder {
         self
     }
 
-    pub fn expect_register_read(mut self, data: &'static [u8; 8]) -> Self {
-        self.bus.expect_read().times(1).returning(move |buffer| {
-            buffer.copy_from_slice(data);
+    pub fn expect_register_read<const N: usize>(
+        mut self,
+        cmd0: u8,
+        cmd1: u8,
+        pec0: u8,
+        pec1: u8,
+        data: &'static [[u8; 8]; N],
+    ) -> Self {
+        self.bus.expect_transfer().times(1).returning(move |read, write| {
+            assert_eq!(12, read.len());
+            assert_eq!(12, write.len());
+
+            assert_eq!(cmd0, write[0]);
+            assert_eq!(cmd1, write[1]);
+            assert_eq!(pec0, write[2]);
+            assert_eq!(pec1, write[3]);
+
+            read[4..].copy_from_slice(&data[0]);
             Ok(())
         });
+
+        for item in &data[1..] {
+            self.bus.expect_read().times(1).returning(move |buffer| {
+                assert_eq!(8, buffer.len());
+                buffer.copy_from_slice(item);
+                Ok(())
+            });
+        }
 
         self
     }
