@@ -121,6 +121,10 @@ impl DeviceTypes for LTC6812 {
 
     const REG_CONF_A: Self::Register = Register::ConfigurationA;
     const REG_CONF_B: Option<Self::Register> = Some(Register::ConfigurationB);
+
+    const TOTAL_VOLTAGE_FACTOR: u32 = 30;
+    const INTERNAL_TEMP_GAIN: i32 = 7600;
+    const INTERNAL_TEMP_OFFSET: i16 = 276;
 }
 
 impl<B, const L: usize> LTC681X<B, NoPolling, LTC6812, L>
@@ -309,7 +313,28 @@ impl RegisterAddress<LTC6812> {
     }
 }
 
+/// Cell register locations ordered by Channel.
 const CELL_REGISTER_LOCATIONS: [RegisterAddress<LTC6812>; 15] = [
+    RegisterAddress::ltc6812(Channel::Cell1, Register::CellVoltageA, 0),
+    RegisterAddress::ltc6812(Channel::Cell2, Register::CellVoltageA, 1),
+    RegisterAddress::ltc6812(Channel::Cell3, Register::CellVoltageA, 2),
+    RegisterAddress::ltc6812(Channel::Cell4, Register::CellVoltageB, 0),
+    RegisterAddress::ltc6812(Channel::Cell5, Register::CellVoltageB, 1),
+    RegisterAddress::ltc6812(Channel::Cell6, Register::CellVoltageB, 2),
+    RegisterAddress::ltc6812(Channel::Cell7, Register::CellVoltageC, 0),
+    RegisterAddress::ltc6812(Channel::Cell8, Register::CellVoltageC, 1),
+    RegisterAddress::ltc6812(Channel::Cell9, Register::CellVoltageC, 2),
+    RegisterAddress::ltc6812(Channel::Cell10, Register::CellVoltageD, 0),
+    RegisterAddress::ltc6812(Channel::Cell11, Register::CellVoltageD, 1),
+    RegisterAddress::ltc6812(Channel::Cell12, Register::CellVoltageD, 2),
+    RegisterAddress::ltc6812(Channel::Cell13, Register::CellVoltageE, 0),
+    RegisterAddress::ltc6812(Channel::Cell14, Register::CellVoltageE, 1),
+    RegisterAddress::ltc6812(Channel::Cell15, Register::CellVoltageE, 2),
+];
+
+/// Cell register locations ordered by CellSelection. These definitions
+/// should match CELL_REGISTER_LOCATIONS.
+const CELL_REGISTER_LOCATIONS_BY_PAIRS: [RegisterAddress<LTC6812>; 15] = [
     RegisterAddress::ltc6812(Channel::Cell1, Register::CellVoltageA, 0),
     RegisterAddress::ltc6812(Channel::Cell6, Register::CellVoltageB, 2),
     RegisterAddress::ltc6812(Channel::Cell11, Register::CellVoltageD, 1),
@@ -331,11 +356,11 @@ impl RegisterLocator<LTC6812> for CellSelection {
     fn get_locations(&self) -> Iter<'static, RegisterAddress<LTC6812>> {
         match self {
             CellSelection::All => CELL_REGISTER_LOCATIONS.iter(),
-            CellSelection::Group1 => CELL_REGISTER_LOCATIONS[0..3].iter(),
-            CellSelection::Group2 => CELL_REGISTER_LOCATIONS[3..6].iter(),
-            CellSelection::Group3 => CELL_REGISTER_LOCATIONS[6..9].iter(),
-            CellSelection::Group4 => CELL_REGISTER_LOCATIONS[9..12].iter(),
-            CellSelection::Group5 => CELL_REGISTER_LOCATIONS[12..15].iter(),
+            CellSelection::Group1 => CELL_REGISTER_LOCATIONS_BY_PAIRS[0..3].iter(),
+            CellSelection::Group2 => CELL_REGISTER_LOCATIONS_BY_PAIRS[3..6].iter(),
+            CellSelection::Group3 => CELL_REGISTER_LOCATIONS_BY_PAIRS[6..9].iter(),
+            CellSelection::Group4 => CELL_REGISTER_LOCATIONS_BY_PAIRS[9..12].iter(),
+            CellSelection::Group5 => CELL_REGISTER_LOCATIONS_BY_PAIRS[12..15].iter(),
         }
     }
 }
