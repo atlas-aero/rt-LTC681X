@@ -105,7 +105,7 @@ fn test_ltc6813_cell_register_locations_all() {
             ltc6813::Channel::Cell16,
             ltc6813::Channel::Cell17,
             ltc6813::Channel::Cell18,
-        ]
+        ],
     );
     assert_cell_register_locations(locations.collect());
 }
@@ -151,7 +151,7 @@ fn test_ltc6812_cell_register_locations_all() {
             ltc6812::Channel::Cell13,
             ltc6812::Channel::Cell14,
             ltc6812::Channel::Cell15,
-        ]
+        ],
     );
     assert_cell_register_locations(locations.collect());
 }
@@ -192,7 +192,7 @@ fn test_ltc6811_cell_register_locations_all() {
             ltc6811::Channel::Cell10,
             ltc6811::Channel::Cell11,
             ltc6811::Channel::Cell12,
-        ]
+        ],
     );
     assert_cell_register_locations(locations.collect());
 }
@@ -257,7 +257,7 @@ fn test_ltc6810_cell_register_locations_all() {
             ltc6810::Channel::Cell4,
             ltc6810::Channel::Cell5,
             ltc6810::Channel::Cell6,
-        ]
+        ],
     );
     assert_cell_register_locations(locations.collect());
 }
