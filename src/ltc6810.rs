@@ -91,6 +91,10 @@ impl DeviceTypes for LTC6810 {
 
     const REG_CONF_A: Self::Register = Register::Configuration;
     const REG_CONF_B: Option<Self::Register> = None;
+
+    const TOTAL_VOLTAGE_FACTOR: u32 = 10;
+    const INTERNAL_TEMP_GAIN: i32 = 7600;
+    const INTERNAL_TEMP_OFFSET: i16 = 273;
 }
 
 impl<B, const L: usize> LTC681X<B, NoPolling, LTC6810, L>

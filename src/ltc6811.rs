@@ -106,6 +106,10 @@ impl DeviceTypes for LTC6811 {
 
     const REG_CONF_A: Self::Register = Register::ConfigurationA;
     const REG_CONF_B: Option<Self::Register> = Some(Register::ConfigurationB);
+
+    const TOTAL_VOLTAGE_FACTOR: u32 = 20;
+    const INTERNAL_TEMP_GAIN: i32 = 7500;
+    const INTERNAL_TEMP_OFFSET: i16 = 273;
 }
 
 impl<B, const L: usize> LTC681X<B, NoPolling, LTC6811, L>
@@ -276,7 +280,25 @@ impl RegisterAddress<LTC6811> {
     }
 }
 
+/// Cell register locations ordered by Channel.
 const CELL_REGISTER_LOCATIONS: [RegisterAddress<LTC6811>; 12] = [
+    RegisterAddress::ltc6811(Channel::Cell1, Register::CellVoltageA, 0),
+    RegisterAddress::ltc6811(Channel::Cell2, Register::CellVoltageA, 1),
+    RegisterAddress::ltc6811(Channel::Cell3, Register::CellVoltageA, 2),
+    RegisterAddress::ltc6811(Channel::Cell4, Register::CellVoltageB, 0),
+    RegisterAddress::ltc6811(Channel::Cell5, Register::CellVoltageB, 1),
+    RegisterAddress::ltc6811(Channel::Cell6, Register::CellVoltageB, 2),
+    RegisterAddress::ltc6811(Channel::Cell7, Register::CellVoltageC, 0),
+    RegisterAddress::ltc6811(Channel::Cell8, Register::CellVoltageC, 1),
+    RegisterAddress::ltc6811(Channel::Cell9, Register::CellVoltageC, 2),
+    RegisterAddress::ltc6811(Channel::Cell10, Register::CellVoltageD, 0),
+    RegisterAddress::ltc6811(Channel::Cell11, Register::CellVoltageD, 1),
+    RegisterAddress::ltc6811(Channel::Cell12, Register::CellVoltageD, 2),
+];
+
+/// Cell register locations ordered by CellSelection. These definitions
+/// should match CELL_REGISTER_LOCATIONS.
+const CELL_REGISTER_LOCATIONS_BY_PAIRS: [RegisterAddress<LTC6811>; 12] = [
     RegisterAddress::ltc6811(Channel::Cell1, Register::CellVoltageA, 0),
     RegisterAddress::ltc6811(Channel::Cell7, Register::CellVoltageC, 0),
     RegisterAddress::ltc6811(Channel::Cell2, Register::CellVoltageA, 1),
@@ -295,12 +317,12 @@ impl RegisterLocator<LTC6811> for CellSelection {
     fn get_locations(&self) -> Iter<'static, RegisterAddress<LTC6811>> {
         match self {
             CellSelection::All => CELL_REGISTER_LOCATIONS.iter(),
-            CellSelection::Pair1 => CELL_REGISTER_LOCATIONS[0..2].iter(),
-            CellSelection::Pair2 => CELL_REGISTER_LOCATIONS[2..4].iter(),
-            CellSelection::Pair3 => CELL_REGISTER_LOCATIONS[4..6].iter(),
-            CellSelection::Pair4 => CELL_REGISTER_LOCATIONS[6..8].iter(),
-            CellSelection::Pair5 => CELL_REGISTER_LOCATIONS[8..10].iter(),
-            CellSelection::Pair6 => CELL_REGISTER_LOCATIONS[10..12].iter(),
+            CellSelection::Pair1 => CELL_REGISTER_LOCATIONS_BY_PAIRS[0..2].iter(),
+            CellSelection::Pair2 => CELL_REGISTER_LOCATIONS_BY_PAIRS[2..4].iter(),
+            CellSelection::Pair3 => CELL_REGISTER_LOCATIONS_BY_PAIRS[4..6].iter(),
+            CellSelection::Pair4 => CELL_REGISTER_LOCATIONS_BY_PAIRS[6..8].iter(),
+            CellSelection::Pair5 => CELL_REGISTER_LOCATIONS_BY_PAIRS[8..10].iter(),
+            CellSelection::Pair6 => CELL_REGISTER_LOCATIONS_BY_PAIRS[10..12].iter(),
         }
     }
 }

@@ -84,6 +84,29 @@ fn test_ltc6810_grouped_index() {
 #[test]
 fn test_ltc6813_cell_register_locations_all() {
     let locations = ltc6813::CellSelection::All.get_locations();
+    assert_cell_channel_mappings(
+        ltc6813::CellSelection::All.get_locations().collect(),
+        vec![
+            ltc6813::Channel::Cell1,
+            ltc6813::Channel::Cell2,
+            ltc6813::Channel::Cell3,
+            ltc6813::Channel::Cell4,
+            ltc6813::Channel::Cell5,
+            ltc6813::Channel::Cell6,
+            ltc6813::Channel::Cell7,
+            ltc6813::Channel::Cell8,
+            ltc6813::Channel::Cell9,
+            ltc6813::Channel::Cell10,
+            ltc6813::Channel::Cell11,
+            ltc6813::Channel::Cell12,
+            ltc6813::Channel::Cell13,
+            ltc6813::Channel::Cell14,
+            ltc6813::Channel::Cell15,
+            ltc6813::Channel::Cell16,
+            ltc6813::Channel::Cell17,
+            ltc6813::Channel::Cell18,
+        ],
+    );
     assert_cell_register_locations(locations.collect());
 }
 
@@ -110,6 +133,26 @@ fn test_ltc6813_cell_register_locations_groups() {
 #[test]
 fn test_ltc6812_cell_register_locations_all() {
     let locations = ltc6812::CellSelection::All.get_locations();
+    assert_cell_channel_mappings(
+        ltc6812::CellSelection::All.get_locations().collect(),
+        vec![
+            ltc6812::Channel::Cell1,
+            ltc6812::Channel::Cell2,
+            ltc6812::Channel::Cell3,
+            ltc6812::Channel::Cell4,
+            ltc6812::Channel::Cell5,
+            ltc6812::Channel::Cell6,
+            ltc6812::Channel::Cell7,
+            ltc6812::Channel::Cell8,
+            ltc6812::Channel::Cell9,
+            ltc6812::Channel::Cell10,
+            ltc6812::Channel::Cell11,
+            ltc6812::Channel::Cell12,
+            ltc6812::Channel::Cell13,
+            ltc6812::Channel::Cell14,
+            ltc6812::Channel::Cell15,
+        ],
+    );
     assert_cell_register_locations(locations.collect());
 }
 
@@ -134,6 +177,23 @@ fn test_ltc6812_cell_register_locations_groups() {
 #[test]
 fn test_ltc6811_cell_register_locations_all() {
     let locations = ltc6811::CellSelection::All.get_locations();
+    assert_cell_channel_mappings(
+        ltc6811::CellSelection::All.get_locations().collect(),
+        vec![
+            ltc6811::Channel::Cell1,
+            ltc6811::Channel::Cell2,
+            ltc6811::Channel::Cell3,
+            ltc6811::Channel::Cell4,
+            ltc6811::Channel::Cell5,
+            ltc6811::Channel::Cell6,
+            ltc6811::Channel::Cell7,
+            ltc6811::Channel::Cell8,
+            ltc6811::Channel::Cell9,
+            ltc6811::Channel::Cell10,
+            ltc6811::Channel::Cell11,
+            ltc6811::Channel::Cell12,
+        ],
+    );
     assert_cell_register_locations(locations.collect());
 }
 
@@ -158,8 +218,47 @@ fn test_ltc6811_cell_register_locations_groups() {
 }
 
 #[test]
+fn test_ltc6811_cell_selection_pairs() {
+    assert_cell_channel_mappings(
+        ltc6811::CellSelection::Pair1.get_locations().collect(),
+        vec![ltc6811::Channel::Cell1, ltc6811::Channel::Cell7],
+    );
+    assert_cell_channel_mappings(
+        ltc6811::CellSelection::Pair2.get_locations().collect(),
+        vec![ltc6811::Channel::Cell2, ltc6811::Channel::Cell8],
+    );
+    assert_cell_channel_mappings(
+        ltc6811::CellSelection::Pair3.get_locations().collect(),
+        vec![ltc6811::Channel::Cell3, ltc6811::Channel::Cell9],
+    );
+    assert_cell_channel_mappings(
+        ltc6811::CellSelection::Pair4.get_locations().collect(),
+        vec![ltc6811::Channel::Cell4, ltc6811::Channel::Cell10],
+    );
+    assert_cell_channel_mappings(
+        ltc6811::CellSelection::Pair5.get_locations().collect(),
+        vec![ltc6811::Channel::Cell5, ltc6811::Channel::Cell11],
+    );
+    assert_cell_channel_mappings(
+        ltc6811::CellSelection::Pair6.get_locations().collect(),
+        vec![ltc6811::Channel::Cell6, ltc6811::Channel::Cell12],
+    );
+}
+
+#[test]
 fn test_ltc6810_cell_register_locations_all() {
     let locations = ltc6810::CellSelection::All.get_locations();
+    assert_cell_channel_mappings(
+        ltc6810::CellSelection::All.get_locations().collect(),
+        vec![
+            ltc6810::Channel::Cell1,
+            ltc6810::Channel::Cell2,
+            ltc6810::Channel::Cell3,
+            ltc6810::Channel::Cell4,
+            ltc6810::Channel::Cell5,
+            ltc6810::Channel::Cell6,
+        ],
+    );
     assert_cell_register_locations(locations.collect());
 }
 
@@ -341,6 +440,17 @@ const CORRECT_CELL_LOCATIONS: [[usize; 3]; 18] = [
     [16, 5, 1],
     [17, 5, 2],
 ];
+
+/// Checks that the channels from the listed RegisterAddresses match expected.
+fn assert_cell_channel_mappings<T: DeviceTypes>(actual: Vec<&RegisterAddress<T>>, expected: Vec<T::Channel>)
+where
+    T::Channel: PartialEq + std::fmt::Debug,
+{
+    assert_eq!(actual.len(), expected.len());
+    for i in 0..actual.len() {
+        assert_eq!(actual[i].channel, expected[i]);
+    }
+}
 
 fn assert_cell_register_locations<T: DeviceTypes>(locations: Vec<&RegisterAddress<T>>) {
     assert_eq!(T::CELL_COUNT, locations.len());

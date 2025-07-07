@@ -1684,22 +1684,6 @@ fn test_read_voltages_cell_all() {
             0xC2,
             [&[0x93, 0x61, 0xBB, 0x1E, 0xAE, 0x22, 0x9A, 0x1C]],
         )
-        // Register C
-        .expect_register_read(
-            0b0000_0000,
-            0b0000_1000,
-            0x5E,
-            0x52,
-            [&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
-        )
-        // Register E
-        .expect_register_read(
-            0b0000_0000,
-            0b0000_1001,
-            0xD5,
-            0x60,
-            [&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA]],
-        )
         // Register B
         .expect_register_read(
             0b0000_0000,
@@ -1708,6 +1692,14 @@ fn test_read_voltages_cell_all() {
             0x94,
             [&[0xDD, 0x66, 0x72, 0x1D, 0xA2, 0x1C, 0x11, 0x94]],
         )
+        // Register C
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1000,
+            0x5E,
+            0x52,
+            [&[0x61, 0x63, 0xBD, 0x1E, 0xE4, 0x22, 0x3F, 0x42]],
+        )
         // Register D
         .expect_register_read(
             0b0000_0000,
@@ -1715,6 +1707,14 @@ fn test_read_voltages_cell_all() {
             0xC3,
             0x4,
             [&[0x8A, 0x61, 0x61, 0x1F, 0xCF, 0x21, 0x01, 0xEE]],
+        )
+        // Register E
+        .expect_register_read(
+            0b0000_0000,
+            0b0000_1001,
+            0xD5,
+            0x60,
+            [&[0xDE, 0x64, 0x8F, 0x21, 0x8A, 0x21, 0x8F, 0xDA]],
         )
         // Register F
         .expect_register_read(

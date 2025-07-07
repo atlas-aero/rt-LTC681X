@@ -552,6 +552,18 @@ pub trait DeviceTypes: Send + Sync + Sized + 'static {
 
     /// Configuration register B, None in case device type has no second configuration register
     const REG_CONF_B: Option<Self::Register>;
+
+    /// Conversion factor for calculating the total voltage based on status register value.
+    /// S. datasheet SC -> Sum of All Cells Measurement (page. 68 of LTC6813 datasheet)
+    const TOTAL_VOLTAGE_FACTOR: u32;
+
+    /// Gain for calculating the internal die temperature in uV.
+    /// S. datasheet ITMP -> Internal Die Temperature calculation (page. 68 of LTC6813 datasheet)
+    const INTERNAL_TEMP_GAIN: i32;
+
+    /// Offset for calculating the internal die temperature in °C.
+    /// S. datasheet ITMP -> Internal Die Temperature calculation (page. 68 of LTC6813 datasheet)
+    const INTERNAL_TEMP_OFFSET: i16;
 }
 
 /// Public LTC681X client interface
@@ -875,7 +887,7 @@ where
             let temp_fixed = self.calc_temperature(status_a[device_index][1]);
 
             let _ = parameters.push(InternalDeviceParameters {
-                total_voltage: status_a[device_index][0] as u32 * 30 * 100,
+                total_voltage: status_a[device_index][0] as u32 * T::TOTAL_VOLTAGE_FACTOR * 100,
                 analog_power: status_a[device_index][2] as u32 * 100,
                 digital_power: status_b[device_index][0] as u32 * 100,
                 temperature: temp_fixed,
@@ -970,18 +982,12 @@ where
             return I16F16::MAX;
         }
 
-        // Constant of 276 °C, which needs to be subtracted
-        const TEMP_SUB: i16 = 20976;
+        // Normalize gain from mV to reduce need for FP precision.
+        let gain = I16F16::from_num(T::INTERNAL_TEMP_GAIN) / 100;
+        let offset = I16F16::from_num(T::INTERNAL_TEMP_OFFSET);
 
-        // Check if temperature is negative
-        let temp_i32: i16 = if value >= TEMP_SUB as u16 {
-            value as i16 - TEMP_SUB
-        } else {
-            0 - TEMP_SUB + value as i16
-        };
-
-        // Applying factor 100 uV/7.6 mV
-        I16F16::from_num(temp_i32) / 76
+        // Die temp = ITMP * 1/gain - offset.
+        I16F16::from_num(value) / gain - offset
     }
 }
 
