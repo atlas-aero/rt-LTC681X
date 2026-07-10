@@ -245,6 +245,7 @@ use crate::monitor::{NoPolling, PollMethod};
 use crate::pec15::PEC15;
 use embedded_hal::spi::{Operation, SpiDevice};
 use heapless::Vec;
+use log::error;
 use modular_bitfield::prelude::*;
 
 // ---------------------------------------------------------------------------
@@ -1281,18 +1282,24 @@ where
     // covered by a PEC.
 
     /// Constructs the ID byte for a DCMD (datasheet Table 12).
-    fn make_id(read: bool) -> u8 {
-        let pecc = PECC & 0x0F;
-        let p3 = (pecc >> 3) & 1;
-        let p2 = (pecc >> 2) & 1;
-        let p1 = (pecc >> 1) & 1;
-        let p0 = pecc & 1;
-        let rw = u8::from(read);
-        let not_rw = rw ^ 1;
-        let bit5 = p3 ^ p2;
-        let bit2 = p1 ^ p0;
-        (rw << 7) | (not_rw << 6) | (bit5 << 5) | (p3 << 4) | (p2 << 3) | (bit2 << 2) | (p1 << 1) | p0
-    }
+    fn make_id(read: bool, pecc: u8) -> u8 {
+    let pecc = pecc & 0x0F;
+    let p3 = (pecc >> 3) & 1;
+    let p2 = (pecc >> 2) & 1;
+    let p1 = (pecc >> 1) & 1;
+    let p0 = pecc & 1;
+    let rw = u8::from(read);
+    let not_rw = rw ^ 1;
+
+    (rw << 7)
+        | (not_rw << 6)
+        | ((p3 ^ p2) << 5)
+        | (p3 << 4)
+        | (p2 << 3)
+        | ((p1 ^ p0) << 2)
+        | (p1 << 1)
+        | p0
+}
 
     /// Sends a DCMD write transaction. `data` must fit one PEC group (≤ 16 bytes); every
     /// caller already stays within that (the 9-byte NTC burst is the largest).
@@ -1306,7 +1313,7 @@ where
         let header_pec = PEC15::calc(&frame[0..2]);
         frame[2] = header_pec[0];
         frame[3] = header_pec[1];
-        frame[4] = Self::make_id(false);
+        frame[4] = Self::make_id(false, (data.len() - 1) as u8);
 
         let n = data.len();
         frame[5..5 + n].copy_from_slice(data);
@@ -1338,7 +1345,7 @@ where
         let header_pec = PEC15::calc(&mosi[0..2]);
         mosi[2] = header_pec[0];
         mosi[3] = header_pec[1];
-        mosi[4] = Self::make_id(true);
+        mosi[4] = Self::make_id(true, (n - 1) as u8);
         // bytes 5..5+n and the trailing PEC bytes stay 0xFF (don't-care on MOSI).
 
         let total = 5 + n + 2;
@@ -1354,6 +1361,22 @@ where
             // case its page selection is back to PAGE0. Drop the cache so the next access
             // re-issues REGSCTRL rather than trusting a possibly-stale page.
             self.current_page = None;
+            let data = &miso[5..5 + n];
+            let received_pec = [miso[5 + n], miso[6 + n]];
+            let expected_pec = PEC15::calc(data);
+
+            error!(
+                "DCMD addr=0x{:02X}, n={}, data={:02X?}, expected_pec={:02X}{:02X}, received_pec={:02X}{:02X}, full_miso={:02X?}",
+                addr,
+                n,
+                data,
+                expected_pec[0],
+                expected_pec[1],
+                received_pec[0],
+                received_pec[1],
+                &miso[..total],
+            );
+            self.poll_method.end_sync_command(&mut self.bus).map_err(Error::BusError)?;
             return Err(Error::ChecksumMismatch);
         }
 
